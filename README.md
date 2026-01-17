@@ -8,7 +8,7 @@ To follow the content, basic programming skills are expected, with Python being 
 The repository is structured hierarchically, starting with fundamental concepts and gradually progressing toward more advanced topics such as AI integrations, automation workflows, and agent-based systems.
 
 ## Learning Path
-1. **Python + AI Integration**
+1. [**Python + AI Integration**](https://github.com/zvolenskydaniel/AI/blob/main/01-python-ai-integration/README.md)
    - OpenAI API fundamentals
    - Prompt engineering basics
    - Structured outputs & validation

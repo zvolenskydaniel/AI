@@ -344,7 +344,7 @@ print(data)
 ```
 
 > **NOTE:**
-> The respond `raw_output` from LLM is string with additional characters presented, therefore `json.loads(raw_output)` is going to fail if the additional characters are not removed from the string of the `raw_output`. The `json.loads()` expects valid `JSON.`
+> The respond `raw_output` from LLM is string with additional characters presented. Therefore `json.loads(raw_output)` is going to fail if the additional characters are not removed from the string of the `raw_output`. The `json.loads()` expects valid `JSON.`
 
 ### JSON Schema Validation
 The example `structured_output_validation.py` uses `JSON Schema`.
@@ -455,6 +455,7 @@ Defensive design principles
 
 ```python
 import os
+import openai
 import json
 from jsonschema import validate, ValidationError
 from dotenv import load_dotenv
@@ -485,10 +486,10 @@ def get_capital(country: str) -> dict:
     Return the capital of {country} in JSON format.
 
     Expected format:
-    {
+    {{
       "country": "<string>",
       "capital": "<string>"
-    }
+    }}
     """
 
     try:
@@ -500,15 +501,15 @@ def get_capital(country: str) -> dict:
             temperature = 0.0
         )
 
-        # Print model output
-        raw_output = response.output_text
-        data = json.loads(raw_output)
+        # Get LLM output
+        data = json.loads(response.output_text)
+        
+        # Validate output
         validate(
             instance = data,
             schema = schema
         )
-        print("Validated output:")
-        print(data)
+        return data
 
     except json.JSONDecodeError:
         print("Invalid JSON returned by model.")
@@ -516,10 +517,22 @@ def get_capital(country: str) -> dict:
     except ValidationError as e:
         print(f"JSON schema validation failed: {e}.")
 
-    except OpenAIError as e:
-        raise RuntimeError(f"LLM API error: {e}")
+    except openai.APIError as e:
+      #Handle API error here, e.g. retry or log
+      print(f"OpenAI API returned an API Error: {e}")
+      pass
+    except openai.APIConnectionError as e:
+      #Handle connection error here
+      print(f"Failed to connect to OpenAI API: {e}")
+      pass
+    except openai.RateLimitError as e:
+      #Handle rate limit error (we recommend using exponential backoff)
+      print(f"OpenAI API request exceeded rate limit: {e}")
+      pass
 
-get_capital(country = "Slovakia")
+data = get_capital(country = "Slovakia")
+print(data)
+
 
 ```
 
@@ -541,7 +554,8 @@ def retry_llm_call(fn, retries=3, backoff=2):
                 raise
             time.sleep(backoff ** attempt)
 
-result = retry_llm_call(lambda: get_capital("Slovakia"))
+# Usage
+result = retry_llm_call(lambda: get_capital(country = "Slovakia"))
 
 ```
 
