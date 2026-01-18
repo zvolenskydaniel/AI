@@ -423,16 +423,6 @@ Validation allows applications to:
 
 In production systems, model outputs should always be validated before use.
 
-## Common Pitfalls and Best Practices
-- hardcoding API keys instead of using environment variables
-- assuming deterministic outputs from probabilistic models
-- sending overly large or poorly structured prompts
-- lack of validation on model responses
-- allowing additional unexpected fields
-- using high temperature values for structured output
-- parsing JSON without error handling
-- treating LLMs as deterministic services
-
 ## Error Handling and Safety Considerations
 When integrating Large Language Models (LLMs) into applications or automation systems, failures should be expected and explicitly handled. LLMs are probabilistic services that depend on external APIs, network connectivity, and model behavior, all of which can introduce errors or unsafe outputs.
 
