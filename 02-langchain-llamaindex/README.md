@@ -15,7 +15,7 @@ By the end of this chapter, the focus is on moving from single prompt–response
 ## Core Concepts
 - [Chains, tools, and memory](#chains-tools-and-memory)
 - [Retrieval-Augmented Generation (RAG)]()
-- [Document indexing and querying]
+- [Document indexing and querying]()
 - [Modular AI pipelines]()
 - [Why Frameworks Are Needed]()
 - [Summary]() 
@@ -166,7 +166,6 @@ AI applications need memory to share context across multiple interactions.
 - long-term memory to store user-specific or application-level data across sessions
 
 #### Manual Short-Term Memory Example
-- `manual_shortterm_memory.py`
 ```python
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
@@ -233,17 +232,6 @@ Short-term memory is commonly used for:
 - prototyping and experimentation
 
 #### Manual Long-Term Memory Example
-- `history.json`
-```txt
-[
-    {
-        "role": "human",
-        "content": "My name is Daniel and I love biking."
-    }
-]
-```
-
-- `manual_longterm_memory.py`
 ```python
 import json
 import os
@@ -319,6 +307,16 @@ for user_text in user_inputs:
     # Append assistant message to history
     history.append(AIMessage(content = response.content))
 
+```
+
+- content of the file `history.json`
+```txt
+[
+    {
+        "role": "human",
+        "content": "My name is Daniel and I love biking."
+    }
+]
 ```
 
 In a manual long-term memory approach, the conversation between the user and the AI assistant is **persisted to local storage**, typically in a structured format such as a `JSON file`.
