@@ -14,7 +14,7 @@ The repository is structured hierarchically, starting with fundamental concepts 
    - Structured outputs & validation
    - Error handling and safety considerations
 
-2. **LangChain & LlamaIndex**
+2. [**LangChain & LlamaIndex**](https://github.com/zvolenskydaniel/AI/blob/main/02-langchain-llamaindex/README.md)
    - Chains, tools, and memory
    - Retrieval-Augmented Generation (RAG)
    - Document indexing and querying
