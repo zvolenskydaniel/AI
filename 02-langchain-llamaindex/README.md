@@ -18,7 +18,6 @@ By the end of this chapter, the focus is on moving from single prompt–response
 - [Retrieval-Augmented Generation (RAG)](#retrieval-augmented-generation-rag)
 - [Document Indexing and Querying](#document-indexing-and-querying)
 - [Modular AI pipelines](#modular-ai-pipelines)
-- [Why Frameworks Are Needed](#why-frameworks-are-needed)
 - [Summary](#summary) 
 
 ## Why Frameworks Are Needed
@@ -27,9 +26,9 @@ As AI applications grow in complexity, challenges such as context management, pr
 ## Chains, Tools, and Memory
 
 ### Conceptual Overview
-After learning how to call an LLM directly via an API (Chapter 1), the next challenge is **orchestration**:
+After learning how to call an LLM directly via an API (*Chapter 1*), the next challenge is **orchestration**:
 - How do we break a task into multiple steps?
-- How do we combine LLM reasoning with external systems (APIs, databases, tools)?
+- How do we combine LLM reasoning with external systems (*APIs, databases, tools*)?
 - How do we preserve context across multiple interactions?
 
 This is exactly the problem space that **LangChain** was designed to solve.
@@ -49,7 +48,9 @@ A **chain** is a sequence of operations where:
 - each step may involve an LLM call, a prompt template, or a transformation
 - the output of one step feeds into the next
 
-Think of a chain as a **pipeline for reasoning**. Example use cases:
+Think of a chain as a **pipeline for reasoning**.
+
+Example use cases:
 - generate → summarize → format
 - translate → analyze sentiment → extract entities
 - ask a question → refine it → answer with context
@@ -150,7 +151,7 @@ print(ai_message["messages"][-1].content)
 ```
 
 When registered as a tool:
-- the LLM can call get_country_population("Slovakia")
+- the LLM can call get_country_population ("Slovakia")
 - receive the result
 - use it to generate a final response
 
@@ -354,7 +355,7 @@ A common optimization strategy is **memory summarization**, where:
 This approach allows long-term memory to scale while remaining performant and cost-efficient.
 
 ## Retrieval-Augmented Generation (RAG)
-**Retrieval-augmented generation (RAG)** is an AI framework that combines information retrieval with generative AI to create more accurate, up-to-date, and contextually relevant responses. It works by first retrieving relevant information from an external knowledge base, like a company's internal documents or the latest internet data, and then feeding this information into a Large Language Model (LLM) to generate a response. This process grounds the LLM's answer in specific facts, reduces the risk of "hallucinations" (*generating incorrect information*), and allows the model to reference sources, making it more reliable and efficient than simply relying on its pre-trained knowledge.
+**Retrieval-Augmented Generation (RAG)** is an AI framework that combines information retrieval with generative AI to create more accurate, up-to-date, and contextually relevant responses. It works by first retrieving relevant information from an external knowledge base, like a company's internal documents or the latest internet data, and then feeding this information into a Large Language Model (LLM) to generate a response. This process grounds the LLM's answer in specific facts, reduces the risk of "hallucinations" (*generating incorrect information*), and allows the model to reference sources, making it more reliable and efficient than simply relying on its pre-trained knowledge.
 
 **LlamaIndex** excels in search and retrieval tasks. It’s a powerful tool for data indexing and querying and a great choice for projects that require advanced search. LlamaIndex enables the handling of large datasets, resulting in quick and accurate information retrieval.
 
@@ -481,15 +482,12 @@ The above example:
 - provide easier way to debug hallucinations
 - serve as a preparation example for custom RAG pipelines
 
-### Common RAG Pitfalls
-TBD
-
 ## Document Indexing and Querying
 **Document indexing and querying** form the backbone of Retrieval-Augmented Generation (RAG) systems. This process defines how raw documents are transformed into searchable knowledge and how relevant information is later retrieved and injected into Large Language Model (LLM) prompts.
 
 **Indexing** typically involves loading documents, splitting them into meaningful chunks, generating vector embeddings, and storing those embeddings in an index optimized for similarity search. **Querying** then uses this index to efficiently identify the most relevant pieces of information in response to a user’s question.
 
-**The quality of indexing directly affects retrieval accuracy.** Poor chunking, insufficient metadata, or inappropriate index configurations can result in missing context or irrelevant results—issues that cannot be fully compensated for by prompt engineering or more powerful models. Conversely, well-designed indexing enables LLMs to generate grounded, factual, and context-aware responses.
+**The quality of indexing directly affects retrieval accuracy.** Poor chunking, insufficient metadata, or inappropriate index configurations can result in missing context or irrelevant results — issues that cannot be fully compensated for by prompt engineering or more powerful models. Conversely, well-designed indexing enables LLMs to generate grounded, factual, and context-aware responses.
 
 In this section, we explore how *LangChain* and *LlamaIndex* handle document indexing and querying, focusing on practical design choices, common trade-offs, and techniques for building reliable and scalable retrieval pipelines.
 
@@ -588,6 +586,7 @@ print(f"Loaded {len(documents)} document(s).")
 ```
 
 > **Recursive**: include the contents of any subdirectories.
+>
 > Is usefull for:
 > - knowledge bases
 > - documentation trees
@@ -659,7 +658,7 @@ print(doc.metadata)
 
 ```
 
-> Metadata enrichment enables filtering, traceability, and governance in RAG systems.
+> **Metadata enrichment** enables filtering, traceability, and governance in RAG systems.
 > While optional for small demos, metadata becomes essential in production-scale applications.
 
 ### Document Chunking Strategies
@@ -723,7 +722,7 @@ index = VectorStoreIndex.from_documents(
 > This is the **recommended default** for most RAG use cases.
 
 #### Paragraph and Section-Based Chunking
-**Paragraph and section-based chunking** are structural strategies in Retrieval-Augmented Generation (RAG) that divide documents based on natural formatting—paragraphs, headers, or markdown—to preserve semantic context. These methods create coherent, logical chunks ideal for structured documents like manuals or reports, enhancing retrieval relevance compared to fixed-size methods.
+**Paragraph and section-based chunking** are structural strategies in Retrieval-Augmented Generation (RAG) that divide documents based on natural formatting — paragraphs, headers, or markdown — to preserve semantic context. These methods create coherent, logical chunks ideal for structured documents like manuals or reports, enhancing retrieval relevance compared to fixed-size methods.
 
 ```python
 from llama_index.core import VectorStoreIndex
@@ -782,7 +781,7 @@ for i, node in enumerate(nodes[:3]):
 | Legal / long text  | Sliding window           |
 | Production RAG     | Sentence-based + overlap |
 
-> ***Chunking** is not a preprocessing detail—it is a core design decision in RAG systems. Poor chunking cannot be fixed by better prompts or stronger models.*
+> ***Chunking** is not a preprocessing detail — it is a core design decision in RAG systems. Poor chunking cannot be fixed by better prompts or stronger models.*
 
 ### Embeddings and Index Construction
 
@@ -984,7 +983,7 @@ for node in response.source_nodes:
 
 ```
 
-- draft of example with an `OR` condition
+- draft of example with `OR` condition
 ```python
 from llama_index.core.vector_stores import MetadataFilter, MetadataFilters
 
