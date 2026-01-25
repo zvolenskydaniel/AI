@@ -81,6 +81,7 @@ Key parameters used:
 - `input`: user-provided text used to generate the response
 
 ```python
+# simple.py
 import os
 from dotenv import load_dotenv
 from openai import OpenAI
@@ -114,6 +115,7 @@ Next steps:
 LLMs are most useful when prompts are dynamically constructed from application data. Therefore we are going to introduce parameterization.
 
 ```python
+# dynamic_input.py
 import os
 from dotenv import load_dotenv
 from openai import OpenAI
@@ -144,6 +146,7 @@ print(response.output_text)
 #### Introduction to Temperature (Controlled Creativity)
 
 ```python
+# temperature.py
 import os
 from dotenv import load_dotenv
 from openai import OpenAI
@@ -183,6 +186,7 @@ For automation and infrastructure use cases, lower temperatures are typically pr
 **Summarizing** can summarize the text with a focus on a specific topics.
 
 ```python
+# summarizing.py
 import os
 from dotenv import load_dotenv
 from openai import OpenAI
@@ -215,6 +219,7 @@ print(response.output_text)
 
 **Transformation** can translate languages, check spelling, grammar checking, tone adjustment, format conversion, etc.
 ```python
+# transformation.py
 import os
 from dotenv import load_dotenv
 from openai import OpenAI
@@ -245,6 +250,7 @@ print(response.output_text)
 **Inference** can extract tags, labels, and topics. For example analyze customer reviews.
 
 ```python
+# inference.py
 import os
 from dotenv import load_dotenv
 from openai import OpenAI
@@ -295,9 +301,10 @@ This chapter demonstrates how to:
 - validate the response before using it
 
 ### Instruct an LLM to Return JSON Output
-The following `structured_output_basic.py` example asks the LLM model a question and force it to return `JSON` only.
+The following example asks the LLM model a question and force it to return `JSON` only.
 
 ```python
+# structured_output_basic.py
 import os
 import json
 from dotenv import load_dotenv
@@ -349,9 +356,10 @@ print(data)
 > The respond `raw_output` from LLM is string with additional characters presented. Therefore `json.loads(raw_output)` is going to fail if the additional characters are not removed from the string of the `raw_output`. The `json.loads()` expects valid `JSON.`
 
 ### JSON Schema Validation
-The example `structured_output_validation.py` uses `JSON Schema`.
+The example below uses `JSON Schema`.
 
 ```python
+# structured_output_validation.py
 import os
 import json
 from jsonschema import validate, ValidationError
@@ -446,6 +454,7 @@ Defensive design principles
 ### Error Handling Pattern Example
 
 ```python
+# error_handling_patterns.py
 import os
 import openai
 import json
@@ -535,6 +544,7 @@ Retry only when failures are likely transient:
 - temporary server errors
 
 ```python
+# retry_strategy.py
 import time
 
 def retry_llm_call(fn, retries=3, backoff=2):

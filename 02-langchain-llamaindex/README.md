@@ -167,6 +167,8 @@ AI applications need memory to share context across multiple interactions.
 - short-term memory as a part of your agent’s state to enable multi-turn conversations
 - long-term memory to store user-specific or application-level data across sessions
 
+> *Below examples of manual memory strategies help clarify how memory works conceptually, before introducing framework-provided memory abstractions such as those in LangChain.*
+
 #### Manual Short-Term Memory Example
 ```python
 # manual_shortterm_memory.py
@@ -346,8 +348,6 @@ A common optimization strategy is **memory summarization**, where:
 - the overall context is preserved while significantly reducing storage size
 
 This approach allows long-term memory to scale while remaining performant and cost-efficient.
-
-> *These manual memory strategies help clarify how memory works conceptually, before introducing framework-provided memory abstractions such as those in LangChain.*
 
 ## Retrieval-Augmented Generation (RAG)
 **Retrieval-augmented generation (RAG)** is an AI framework that combines information retrieval with generative AI to create more accurate, up-to-date, and contextually relevant responses. It works by first retrieving relevant information from an external knowledge base, like a company's internal documents or the latest internet data, and then feeding this information into a Large Language Model (LLM) to generate a response. This process grounds the LLM's answer in specific facts, reduces the risk of "hallucinations" (*generating incorrect information*), and allows the model to reference sources, making it more reliable and efficient than simply relying on its pre-trained knowledge.
