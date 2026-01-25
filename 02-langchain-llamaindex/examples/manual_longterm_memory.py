@@ -10,6 +10,11 @@ from langchain_openai import ChatOpenAI
 from langchain.messages import SystemMessage, HumanMessage, AIMessage
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
+# Get the directory where the script itself is located
+script_dir = os.path.dirname(os.path.abspath(__file__))
+# Combine that directory with the filename
+file_path = os.path.join(script_dir, "history.json")
+
 # Load .env
 load_dotenv()
 
@@ -18,11 +23,6 @@ llm = ChatOpenAI(
     model = "gpt-4o-mini",
     temperature = 0.2
 )
-
-# Get the directory where the script itself is located
-script_dir = os.path.dirname(os.path.abspath(__file__))
-# Combine that directory with the filename
-file_path = os.path.join(script_dir, "history.json")
 
 # Create empty list to store conversation history
 history = []  # list of (role, message) tuples

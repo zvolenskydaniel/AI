@@ -28,6 +28,7 @@ There are multiple LLM providers and model types available, each offering differ
 > In this project, OpenAI models are used as a representative example of modern LLM APIs. The concepts discussed apply broadly to other LLM providers as well.
 
 ## Authentication and Environment Setup
+
 ### Get OpenAI API Key
 A user or service account is required prior to obtain a **secret API key**. An account is required to obtain a secret API key, which can be created via the OpenAI platform. The *key* can be created in the section *API key*.
 
@@ -551,6 +552,7 @@ result = retry_llm_call(lambda: get_capital(country = "Slovakia"))
 ```
 
 ### Safety Considerations
+
 #### Prompt Injection Awareness
 Never blindly pass user input into prompts.
 

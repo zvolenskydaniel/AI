@@ -1,0 +1,2 @@
+Employees are allowed to work remotely up to three days per week.
+All security incidents must be reported within 24 hours.
