@@ -7,6 +7,7 @@ import logging
 import os
 from dotenv import load_dotenv
 from llama_index.core import VectorStoreIndex, SimpleDirectoryReader
+from llama_index.core.vector_stores import MetadataFilter, MetadataFilters
 
 # Set logging
 logging.getLogger("openai").setLevel(logging.WARNING)
@@ -34,11 +35,33 @@ documents = SimpleDirectoryReader(
 # Build vector index
 index = VectorStoreIndex.from_documents(documents)
 
-# Create retriever
-retriever = index.as_retriever(similarity_top_k = 2)
+# Define metadata filters explicitly
+filters = MetadataFilters(
+    filters=[
+        MetadataFilter(
+            key = "source",
+            value = "internal_docs"
+        ),
+        MetadataFilter(
+            key = "document_type",
+            value = "policy"
+        )
+    ],
+    condition = "and"  # Combine filters with AND (default)
+)
 
-# Retrieving nodes
-nodes = retriever.retrieve("remote work policy")
-for node in nodes:
+# Metadata filtering during quering
+query_engine = index.as_query_engine(filters = filters)
+
+# Query -> Response
+response = query_engine.query(
+    "How many days per week is remote work allowed?"
+)
+
+# Print output
+print(f"Response: {response}\n")
+
+# Inspect what was retrieved
+for node in response.source_nodes:
     print(f"Text:\n{node.text}\n")
     print(f"Metadata: {node.metadata}")

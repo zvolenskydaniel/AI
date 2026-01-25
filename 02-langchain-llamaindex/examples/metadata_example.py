@@ -11,7 +11,7 @@ script_dir = os.path.dirname(os.path.abspath(__file__))
 # Combine that directory with the filename
 file_path = os.path.join(script_dir, "data")
 
-# Load documents from disk
+# Load documents from disk and define metadata
 documents = SimpleDirectoryReader(
     input_dir = file_path,
     file_metadata = lambda filename: {

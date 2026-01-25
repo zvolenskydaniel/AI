@@ -13,12 +13,16 @@ The goal of this chapter is to understand how higher-level frameworks can be use
 By the end of this chapter, the focus is on moving from single prompt–response interactions toward applications that combine multiple steps, external data, and reusable components.
 
 ## Core Concepts
+- [Why Frameworks Are Needed](#why-frameworks-are-needed)
 - [Chains, Tools, and Memory](#chains-tools-and-memory)
 - [Retrieval-Augmented Generation (RAG)](#retrieval-augmented-generation-rag)
 - [Document Indexing and Querying](#document-indexing-and-querying)
 - [Modular AI pipelines](#modular-ai-pipelines)
 - [Why Frameworks Are Needed](#why-frameworks-are-needed)
 - [Summary](#summary) 
+
+## Why Frameworks Are Needed
+As AI applications grow in complexity, challenges such as context management, prompt reuse, tool integration, and data retrieval become difficult to handle with ad-hoc code. Frameworks like **LangChain** and **LlamaIndex** address these challenges by providing standardized abstractions and patterns.
 
 ## Chains, Tools, and Memory
 
@@ -39,7 +43,7 @@ At a high level:
 - *tools* let LLMs act outside of pure text generation
 - *memory* allows LLM-based applications to remember past interactions
 
-### 1. Chains
+### Chains
 A **chain** is a sequence of operations where:
 - inputs flow through one or more steps
 - each step may involve an LLM call, a prompt template, or a transformation
@@ -84,7 +88,7 @@ print(ai_message.content)
 
 ```
 
-### 2. Tools
+### Tools
 In *LangChain*, a **tool** is a callable interface (*typically a Python function*) that acts as a specialized skill for an AI agent, allowing it to interact with the outside world, execute code, fetch real-time data, or call APIs. Tools enable LLMs to move beyond text generation by providing structured inputs and receiving outputs to perform actions.
 
 Tools allow LLMs to:
@@ -152,7 +156,7 @@ When registered as a tool:
 
 This is how LLMs move from *text-only* to **action-capable systems**.
 
-### 3. Memory
+### Memory
 **Memory** is a system that remembers information about previous interactions. For AI agents, memory is crucial because it lets them remember previous interactions, learn from feedback, and adapt to user preferences. As agents tackle more complex tasks with numerous user interactions, this capability becomes essential for both efficiency and user satisfaction. Short term memory lets your application remember previous interactions within a single thread or conversation.
 
 Without memory:
@@ -416,7 +420,7 @@ What’s happening internally:
 > *LlamaIndex and LLM SDKs may emit HTTP and embedding logs by default. These can be safely silenced by adjusting Python logging levels without  affecting functionality or results.*
 
 
-### RAG with Explicit Retrieval + Generation Example
+### Explicit Retrieval + Generation Pipeline Example
 ```python
 # rag_explicit.py
 import os
@@ -477,6 +481,9 @@ The above example:
 - provide easier way to debug hallucinations
 - serve as a preparation example for custom RAG pipelines
 
+### Common RAG Pitfalls
+TBD
+
 ## Document Indexing and Querying
 **Document indexing and querying** form the backbone of Retrieval-Augmented Generation (RAG) systems. This process defines how raw documents are transformed into searchable knowledge and how relevant information is later retrieved and injected into Large Language Model (LLM) prompts.
 
@@ -493,7 +500,7 @@ The quality and structure of loaded documents directly influence all downstream 
 
 *LlamaIndex* provides a flexible document loading system that supports multiple data sources, formats, and preprocessing strategies, allowing developers to adapt ingestion pipelines to different use cases.
 
-#### Supported Document Sources
+#### Supported Sources
 Documents can be loaded from a variety of sources, including:
 - local text files
 - PDFs and Word documents
@@ -504,7 +511,7 @@ Documents can be loaded from a variety of sources, including:
 
 In this learning path, examples focus on local files to keep the core concepts clear and reproducible.
 
-#### Loading Local Text Files
+#### Loading Files
 ```python
 # load_local_txt.py
 import os
@@ -559,7 +566,7 @@ print(f"Loaded {len(documents)} document(s).")
 
 ```
 
-#### Recursive Directory Loading
+#### Recursive Loading
 ```python
 import os
 from llama_index.core import SimpleDirectoryReader
@@ -586,7 +593,23 @@ print(f"Loaded {len(documents)} document(s).")
 > - documentation trees
 > - internal wikis
 
-#### Metadata Enrichment
+#### Multiple Sources
+```python
+documents = []
+
+documents += SimpleDirectoryReader("policies").load_data()
+documents += SimpleDirectoryReader("manuals").load_data()
+documents += SimpleDirectoryReader("reports").load_data()
+
+```
+
+#### Common Document Loading Pitfalls
+- loading raw PDFs without text normalization
+- including boilerplate content (headers, footers, navigation)
+- mixing unrelated document types in a single index
+- ignoring metadata during ingestion
+
+### Metadata Enrichment
 *Metadata* provides additional context about documents, such as file names, timestamps, categories, or access levels. This metadata can later be used for filtering, ranking, or auditing retrieved results.
 
 > Think of **metadata** as *labels attached to chunks of knowledge*. Metadata answers where it came from, what it is, and how it should be used.
@@ -615,7 +638,7 @@ script_dir = os.path.dirname(os.path.abspath(__file__))
 # Combine that directory with the filename
 file_path = os.path.join(script_dir, "data")
 
-# Load documents from disk
+# Load documents from disk and define metadata
 documents = SimpleDirectoryReader(
     input_dir = file_path,
     file_metadata = lambda filename: {
@@ -636,76 +659,8 @@ print(doc.metadata)
 
 ```
 
-- example how to debug why an answer was given (*nodes retrieving*)
-```python
-# metadata_retrieving.py
-import logging
-import os
-from dotenv import load_dotenv
-from llama_index.core import VectorStoreIndex, SimpleDirectoryReader
-
-# Set logging
-logging.getLogger("openai").setLevel(logging.WARNING)
-logging.getLogger("httpx").setLevel(logging.WARNING)
-logging.getLogger("llama_index").setLevel(logging.WARNING)
-
-# Load .env
-load_dotenv()
-
-# Get the directory where the script itself is located
-script_dir = os.path.dirname(os.path.abspath(__file__))
-# Combine that directory with the filename
-file_path = os.path.join(script_dir, "data")
-
-# Load documents from disk
-documents = SimpleDirectoryReader(
-    input_dir = file_path,
-    file_metadata = lambda filename: {
-        "source": "internal_docs",
-        "document_type": "policy",
-        "filename": os.path.basename(filename),
-    }
-).load_data()
-
-# Build vector index
-index = VectorStoreIndex.from_documents(documents)
-
-# Create retriever
-retriever = index.as_retriever(similarity_top_k = 2)
-
-# Retrieving nodes
-nodes = retriever.retrieve("remote work policy")
-for node in nodes:
-    print(f"Text: {node.text}\n")
-    print(f"Metadata: {node.metadata}")
-
-```
-
-- draft of access control
-```python
-if node.metadata["document_type"] == "policy":
-    # allow response
-
-```
-
 > Metadata enrichment enables filtering, traceability, and governance in RAG systems.
 > While optional for small demos, metadata becomes essential in production-scale applications.
-
-#### Loading Multiple Sources
-```python
-documents = []
-
-documents += SimpleDirectoryReader("policies").load_data()
-documents += SimpleDirectoryReader("manuals").load_data()
-documents += SimpleDirectoryReader("reports").load_data()
-
-```
-
-#### Common Document Loading Pitfalls
-- loading raw PDFs without text normalization
-- including boilerplate content (headers, footers, navigation)
-- mixing unrelated document types in a single index
-- ignoring metadata during ingestion
 
 ### Document Chunking Strategies
 **Document chunking** is the process of splitting large documents into smaller, manageable pieces (*chunks*) before they are indexed and embedded. Since Large Language Models (LLMs) have context length limits and operate on token-based inputs, chunking plays a critical role in ensuring that relevant information can be efficiently retrieved and accurately used during response generation.
@@ -736,7 +691,7 @@ splitter = SentenceSplitter(
 
 index = VectorStoreIndex.from_documents(
     documents,
-    transformations = [splitter],
+    transformations = [splitter]
 )
 
 ```
@@ -760,7 +715,7 @@ splitter = SentenceSplitter(
 
 index = VectorStoreIndex.from_documents(
     documents,
-    transformations = [splitter],
+    transformations = [splitter]
 )
 
 ```
@@ -781,7 +736,7 @@ splitter = TokenTextSplitter(
 
 index = VectorStoreIndex.from_documents(
     documents,
-    transformations = [splitter],
+    transformations = [splitter]
 )
 
 ```
@@ -794,13 +749,13 @@ from llama_index.core import VectorStoreIndex
 from llama_index.core.node_parser import SentenceSplitter
 
 splitter = SentenceSplitter(
-    chunk_size=300,
-    chunk_overlap=150,
+    chunk_size = 300,
+    chunk_overlap = 150,
 )
 
 index = VectorStoreIndex.from_documents(
     documents,
-    transformations=[splitter],
+    transformations = [splitter]
 )
 
 ```
@@ -817,7 +772,7 @@ for i, node in enumerate(nodes[:3]):
 
 ```
 
-#### Choosing the Right Strategy
+#### Choosing a Strategy
 
 | Use Case           | Strategy                 |
 | ------------------ | ------------------------ |
@@ -830,27 +785,545 @@ for i, node in enumerate(nodes[:3]):
 > ***Chunking** is not a preprocessing detail—it is a core design decision in RAG systems. Poor chunking cannot be fixed by better prompts or stronger models.*
 
 ### Embeddings and Index Construction
-TBD
+
+#### What Embeddings Represent
+**Embeddings** are dense numerical vectors that capture the semantic meaning of text. Instead of representing words as discrete symbols, embeddings position text in a high-dimensional space where:
+- semantically similar texts are close together
+- unrelated texts are far apart
+- meaning is captured beyond exact keyword matching
+
+In RAG systems, embeddings are the bridge between unstructured text and efficient retrieval.
+
+> **Key idea:** Retrieval happens in *vector space*, not text space.
+
+Example:
+```text
+"Remote work policy"
+"Working from home rules"
+```
+
+Different words, but embeddings place them close together.
+
+#### How Chunking Affects Embeddings
+LLMs embed chunks, not entire documents. The chunking strategy directly shapes what the embeddings represent.
+
+| Chunking Choice       | Effect on Embeddings                  |
+| --------------------- | ------------------------------------- |
+| Very large chunks     | Embeddings become vague and unfocused |
+| Very small chunks     | Embeddings lose context               |
+| Sentence-based chunks | High precision, lower context         |
+| Section-based chunks  | Balanced meaning and context          |
+| Overlapping chunks    | Better recall, higher cost            |
+
+```python
+from llama_index.core.node_parser import SentenceSplitter
+
+splitter = SentenceSplitter(
+    chunk_size = 512,
+    chunk_overlap = 50,
+)
+
+nodes = splitter.get_nodes_from_documents(documents)
+
+```
+
+#### Building an Index from Documents
+Once documents are:
+- loaded
+- chunked
+- embedded
+
+They can be stored in an index for retrieval. The most common index for RAG is the **Vector Store Index**.
+
+```python
+from llama_index.core import VectorStoreIndex
+
+index = VectorStoreIndex.from_documents(documents)
+
+```
+
+#### Common embedding pitfalls
+- chunking too large, which leads to:
+  - embedding mixes multiple topics
+  - retrieval becomes inaccurate
+- chunking too small, which leads to:
+  - embeddings lack context
+  - model retrieves irrelevant fragments
+- ignoring metadata
+  - cannot filter by source
+  - cannot scope queries
+  - debugging retrieval becomes painful
+- re-embedding documents
+  - cost time
+  - cost money
+  - introduces inconsistencies
+- embeddings:
+  - do not reason
+  - do not answer questions
+  - only retrieve relevant context
+
+> chunking defines meaning → embeddings encode meaning → indexes enable retrieval → LLM generates answers
 
 ### Querying and Retrieval
-TBD
+Once documents are indexed, the system’s main job becomes retrieval: finding the most relevant chunks to answer a user’s question.
+Retrieval is driven by semantic similarity, not exact keyword matching.
+
+#### Basic Semantic Querying 
+**Basic semantic querying** is the simplest form of interaction with a vector index.
+- user submits a question
+- the question is converted into an embedding
+- the index finds the most similar document chunks
+- retrieved chunks are passed to the LLM
+- the LLM generates a grounded answer
+
+```python
+# Define query (no metadata filtering)
+query_engine = index.as_query_engine()
+
+# Query -> Response
+response = query_engine.query(
+    "What is the remote work policy?"
+)
+
+# Print output
+print(f"Response: {response}\n")
+
+```
+
+> **Key characteristic:** The user does not need to match document wording exactly.
+
+#### Semantic Search
+Semantic search focuses on *finding relevant information*, not necessarily generating a long answer.
+
+**Semantic search vs basic querying**
+| Feature  | Basic Querying          | Semantic Search |
+| -------- | ----------------------- | --------------- |
+| Output   | Natural language answer | Relevant chunks |
+| Uses LLM | Yes                     | Optional        |
+| Best for | Q&A                     | Discovery       |
+| Cost     | Higher                  | Lower           |
+
+
+```python
+# Create retriever
+retriever = index.as_retriever(similarity_top_k = 2)
+
+# Retrieving nodes
+nodes = retriever.retrieve("remote work policy")
+for node in nodes:
+    print(f"Text:\n{node.text}\n")
+    print(f"Metadata: {node.metadata}")
+
+```
+
+#### Metadata-Base Filtering
+```python
+# metadata_access_control.py
+import logging
+import os
+from dotenv import load_dotenv
+from llama_index.core import VectorStoreIndex, SimpleDirectoryReader
+from llama_index.core.vector_stores import MetadataFilter, MetadataFilters
+
+# Set logging
+logging.getLogger("openai").setLevel(logging.WARNING)
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("llama_index").setLevel(logging.WARNING)
+
+# Load .env
+load_dotenv()
+
+# Get the directory where the script itself is located
+script_dir = os.path.dirname(os.path.abspath(__file__))
+# Combine that directory with the filename
+file_path = os.path.join(script_dir, "data")
+
+# Load documents from disk and define metadata
+documents = SimpleDirectoryReader(
+    input_dir = file_path,
+    file_metadata = lambda filename: {
+        "source": "internal_docs",
+        "document_type": "policy",
+        "filename": os.path.basename(filename),
+    }
+).load_data()
+
+# Build vector index
+index = VectorStoreIndex.from_documents(documents)
+
+# Define metadata filters explicitly
+filters = MetadataFilters(
+    filters=[
+        MetadataFilter(
+            key = "source",
+            value = "internal_docs"
+        ),
+        MetadataFilter(
+            key = "document_type",
+            value = "policy"
+        )
+    ],
+    condition = "and"  # Combine filters with AND (default)
+)
+
+# Metadata filtering during quering
+query_engine = index.as_query_engine(filters = filters)
+
+# Query -> Response
+response = query_engine.query(
+    "How many days per week is remote work allowed?"
+)
+
+# Print output
+print(f"Response: {response}\n")
+
+# Inspect what was retrieved
+for node in response.source_nodes:
+    print(f"Text:\n{node.text}\n")
+    print(f"Metadata: {node.metadata}")
+
+```
+
+- draft of example with an `OR` condition
+```python
+from llama_index.core.vector_stores import MetadataFilter, MetadataFilters
+
+# Define metadata filters explicitly
+filters = MetadataFilters(
+    filters=[
+        MetadataFilter(
+            key = "document_type",
+            value = "policy"
+        ),
+        MetadataFilter(
+            key = "document_type",
+            value = "guideline"
+        )
+    ],
+    condition = "or"
+)
+
+# Metadata filtering during quering
+query_engine = index.as_query_engine(filters=filters)
+
+# Query -> Response
+response = query_engine.query(
+    "How many days per week is remote work allowed?"
+)
+
+```
+
+#### Debugging Retrieval
+```python
+# metadata_retrieving.py
+import logging
+import os
+from dotenv import load_dotenv
+from llama_index.core import VectorStoreIndex, SimpleDirectoryReader
+
+# Set logging
+logging.getLogger("openai").setLevel(logging.WARNING)
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("llama_index").setLevel(logging.WARNING)
+
+# Load .env
+load_dotenv()
+
+# Get the directory where the script itself is located
+script_dir = os.path.dirname(os.path.abspath(__file__))
+# Combine that directory with the filename
+file_path = os.path.join(script_dir, "data")
+
+# Load documents from disk and define metadata
+documents = SimpleDirectoryReader(
+    input_dir = file_path,
+    file_metadata = lambda filename: {
+        "source": "internal_docs",
+        "document_type": "policy",
+        "filename": os.path.basename(filename),
+    }
+).load_data()
+
+# Build vector index
+index = VectorStoreIndex.from_documents(documents)
+
+# Create retriever
+retriever = index.as_retriever(similarity_top_k = 2)
+
+# Retrieving nodes
+nodes = retriever.retrieve("remote work policy")
+for node in nodes:
+    print(f"Text:\n{node.text}\n")
+    print(f"Metadata: {node.metadata}")
+
+```
+
+### Combining Metadata and Chunking
+Combining *metadata* with *chunking strategies* is essential for building production-ready Retrieval-Augmented Generation (RAG) systems. While **chunking** breaks large documents into manageable, semantic pieces (*e.g., sentences, paragraphs*), **metadata** provides the *"context about the content"* — such as document title, page number, section headers, author, or data type (*e.g., code vs. text*).
+
+By tagging every chunk with structured metadata, you can filter, prioritize, and manage data efficiently, improving retrieval precision and preventing *"cross-document contamination"*.
+
+```text
+Raw Document
+   ↓ (Document Loading + Metadata Enrichment)
+Document + Metadata
+   ↓ (Chunking)
+Chunks + Inherited Metadata
+   ↓ (Embedding & Indexing)
+Vector Index
+   ↓ (Metadata Filtering + Similarity Search)
+Retrieved Chunks
+   ↓
+LLM Answer
+```
+> Metadata is attached before chunking, but applied after chunking.
+
+#### Load Document with Metadata
+```python
+# metadata_and_chunking.py
+import os
+from llama_index.core import SimpleDirectoryReader
+
+documents = SimpleDirectoryReader(
+    input_dir = "data",
+    file_metadata = lambda filename: {
+        "source": "internal_docs",
+        "document_type": "policy",
+        "filename": os.path.basename(filename),
+    },
+).load_data()
+
+```
+
+- metadata is attached to the document
+- no chunking yet
+
+#### Apply a Chunking Strategy (Sentence-Based)
+```python
+# metadata_and_chunking.py
+from llama_index.core.node_parser import SentenceSplitter
+from llama_index.core import VectorStoreIndex
+
+splitter = SentenceSplitter(
+    chunk_size = 300,
+    chunk_overlap = 50,
+)
+
+index = VectorStoreIndex.from_documents(
+    documents,
+    transformations = [splitter],
+)
+
+```
+
+- the document is spread into chunks
+- metadata is copied to every chunk derived from the document
+
+#### Inspect Chunks + Metadata
+```python
+# metadata_and_chunking.py
+nodes = splitter.get_nodes_from_documents(documents)
+
+for node in nodes:
+    print(f"Chunk text:\n{node.text}\n")
+    print(f"Metadata: {node.metadata}")
+
+``` 
+
+- inspect what the retriever actually works with
+- inspect whether chunk sizes make sense
+- inspect whether metadata survived intact
+
+#### Query Using Metadata Filtering
+```python
+# metadata_and_chunking.py
+from llama_index.core.vector_stores import MetadataFilter, MetadataFilters
+
+filters = MetadataFilters(
+    filters = [
+        MetadataFilter(
+            key = "document_type",
+            value = "policy"
+        ),
+        MetadataFilter(
+            key = "source",
+            value = "internal_docs"
+        )
+    ],
+    condition = "and"
+)
+
+query_engine = index.as_query_engine(filters = filters)
+
+response = query_engine.query(
+    "How many days per week can employees work remotely?"
+)
+
+print(response)
+
+```
+
+- only policy chunks are considered
+- chunking ensures semantic precision
+- metadata ensures domain correctness
 
 ### Common Indexing Pitfalls
-TBD
+- applying metadata after indexing (too late)
+- using inconsistent metadata keys
+- chunk sizes that don’t match question granularity
+- overlapping metadata filters that return zero chunks
 
+## Modular AI Pipelines
+As AI applications grow in complexity, a single prompt or script quickly becomes insufficient. **Modular AI pipelines** address this by breaking AI systems into composable, interchangeable components that can be developed, tested, and evolved independently.
 
-## Modular AI pipelines
-TBD
+Both **LangChain** and **LlamaIndex** are designed around this principle.
 
-## Why Frameworks Are Needed
-As AI applications grow in complexity, challenges such as context management, prompt reuse, tool integration, and data retrieval become difficult to handle with ad-hoc code. Frameworks like **LangChain** and **LlamaIndex** address these challenges by providing standardized abstractions and patterns.
+### Composable Components
+A modular AI pipeline typically consists of the following building blocks:
+- Data Ingestion
+  - document loaders
+  - metadata enrichment
+  - chunking strategies
+- Indexing & Retrieval
+  - vector indexes
+  - retrievers (semantic, hybrid, filtered)
+- Reasoning & Generation
+  - LLMs
+  - prompt templates
+  - response synthesizers
+- Memory & State
+  - short-term conversation context
+  - long-term memory stores
+- Tools & Integrations
+  - APIs
+  - databases
+  - search engines
+
+Each component has a single responsibility, which makes the system easier to maintain and extend.
+
+### Swapping Retrievers, LLMs, Tools
+One of the biggest advantages of modern AI frameworks is the ability to swap components without rewriting the pipeline.
+
+#### Swapping Retrievers
+```python
+# Default semantic retriever
+retriever = index.as_retriever(similarity_top_k = 3)
+
+# Later: metadata-filtered retriever
+retriever = index.as_retriever(
+    similarity_top_k = 5,
+    filters = filters
+)
+
+```
+
+The rest of the pipeline remains unchanged.
+
+#### Swapping LLMs
+```python
+from llama_index.llms.openai import OpenAI
+
+llm = OpenAI(model = "gpt-4o-mini")
+
+query_engine = index.as_query_engine(llm = llm)
+
+```
+
+Later, switching models:
+```python
+llm = OpenAI(model = "gpt-4.1")
+
+query_engine = index.as_query_engine(llm = llm)
+
+```
+
+No changes to:
+- index
+- chunking
+- metadata
+- retrieval logic
+
+#### Adding Tools to the Pipeline
+```python
+@tools
+def fetch_employee_count():
+    return "The company has 120 employees."
+
+# Tool-enabled reasoning layer
+
+```
+
+Tools can be:
+- added
+- removed
+- mocked
+- replaced
+
+…without impacting retrieval or indexing.
+
+### Production-Ready Patterns
+
+#### Clear separation of concerns
+- retrieval logic ≠ generation logic
+- data loading ≠ indexing
+- prompt design ≠ business logic
+
+#### Configuration Over Code
+```python
+PIPELINE_CONFIG = {
+    "model": "gpt-4o-mini",
+    "top_k": 4,
+    "chunk_size": 512,
+}
+
+```
+
+Avoid hardcoding decisions inside functions.
+
+#### Observability and Logging
+Track:
+- retrieved chunks
+- token usage
+- latency
+- model errors
+
+This is critical for debugging and cost control.
+
+#### Fallbacks and Guardrails
+- retry on API failures
+- use smaller models for low-risk queries
+- validate structured outputs
+- apply metadata filters defensively
+
+#### Stateless Core + Optional Memory
+Design pipelines so they:
+- work without memory
+- improve with memory
+
+This allows safe scaling and easier testing.
+
+> **Mental Model**
+>
+> A modular AI pipeline is not a single “AI system” — it is a flexible assembly of specialized parts.
 
 ## Summary
-TBD
+This chapter explored how **LangChain** and **LlamaIndex** enable the construction of structured, reliable, and scalable AI applications beyond simple prompt–response interactions.
+
+We started by introducing chains, tools, and memory, establishing how complex behaviors can be decomposed into manageable, reusable components. By separating reasoning, action, and state, AI systems become easier to extend, debug, and maintain.
+
+We then examined Retrieval-Augmented Generation (RAG) as a foundational pattern for grounding model outputs in external knowledge. Through practical examples, we demonstrated how retrieval, chunking, metadata enrichment, and filtering work together to reduce hallucinations and improve factual accuracy.
+
+The document indexing and querying section showed how raw data is transformed into searchable knowledge. We covered document loading, chunking strategies, embeddings, index construction, and semantic retrieval—highlighting how each design choice impacts accuracy, performance, and cost.
+
+Finally, we introduced modular AI pipelines, emphasizing composability, interchangeability, and production-readiness. By treating retrievers, LLMs, tools, and memory as swappable components, developers can evolve AI systems safely and incrementally while maintaining clarity and control.
+
+Together, these concepts form a strong foundation for building AI-powered systems that reason over data, adapt to context, and scale beyond experimentation.
 
 ## What’s Next
-The next section Automation & Agent-Based Systems focuses on:
-- single-agent vs multi-agent design
+The next section, **Automation & Agent-Based Systems**, builds on this foundation by shifting from single, modular pipelines to autonomous and semi-autonomous agents.
+
+This chapter will focus on:
+- single-agent vs multi-agent system design
 - CrewAI and AutoGen fundamentals
-- task orchestration and delegation
-- failure handling and observability
+- task orchestration, role specialization, and delegation
+- failure handling, retries, and observability
