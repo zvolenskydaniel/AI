@@ -19,6 +19,7 @@ The repository is structured hierarchically, starting with fundamental concepts 
    - Retrieval-Augmented Generation (RAG)
    - Document indexing and querying
    - Modular AI pipelines
+   - [Example: AI Assistant Using Python Libraries LlamaIndex and LangChain](https://github.com/zvolenskydaniel/AI/blob/main/02-langchain-llamaindex/ai_assistant_example.md)
 
 3. **Automation & Agent-Based Systems**
    - Single-agent vs multi-agent design
