@@ -7,7 +7,7 @@
 - [Success Criteria & KPIs](#success-criteria--kpis)
 - [Development Requirements](#development-requirements)
 - [Development Steps](#development-steps)
-- [Fine-tuning](#fine_tuning)
+- [Fine-tuning](#fine-tuning)
 - [Demo & Evaluation](#demo--evaluation)
 - [Future Improvements](#future-improvements)
 
