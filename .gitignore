@@ -36,4 +36,4 @@ $RECYCLE.BIN/
 */venv
 
 # Logger files
-*/*/logger
+*/examples/logger/*log

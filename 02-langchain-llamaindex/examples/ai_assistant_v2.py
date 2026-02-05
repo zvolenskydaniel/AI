@@ -6,9 +6,11 @@
 import logging
 import os
 from dotenv import load_dotenv
+from llama_index.core import Document
 from llama_index.core import VectorStoreIndex, SimpleDirectoryReader
 from llama_index.core.node_parser import SentenceSplitter
 from llama_index.core.vector_stores import MetadataFilter, MetadataFilters
+from llama_index.core.postprocessor import SimilarityPostprocessor
 from llama_index.core.prompts import PromptTemplate
 
 # --- Configure the logging module ---
@@ -34,30 +36,45 @@ script_dir = os.path.dirname(os.path.abspath(__file__))
 file_path = os.path.join(script_dir, "data", "common_health_issues.txt")
 
 # Load documents from disk and define metadata
-documents = SimpleDirectoryReader(
-    input_files = [file_path],
-    file_metadata = lambda filename: {
-        "source": "internal_docs",
-        "domain": "health_simulation",
-        "document_type": "medical_examples",
-        "audience": "demo",
-        "risk_level": "low",
-        "content_scope": "educational_only",
-        "filename": os.path.basename(filename),
-    }
-).load_data()
+with open(file_path, "r", encoding="utf-8") as f:
+    raw_text = f.read()
 
-# Define chunking strategy (Section-Aware Chunking)
-splitter = SentenceSplitter(
-    chunk_size = 500,
-    chunk_overlap = 20
-)
+## Each issue is separated by a hard delimiter
+sections = [
+    s.strip()
+    for s in raw_text.split("==================================================")
+    if s.strip()
+]
+
+## Manual pre-chunking of the document
+documents = []
+for section in sections:
+    lines = section.splitlines()
+
+    # Extract issue name
+    issue_line = next(
+        (l for l in lines if l.startswith("Issue:")),
+        None
+    )
+    issue_name = issue_line.replace("Issue:", "").strip() if issue_line else "unknown"
+
+    documents.append(
+        Document(
+            text=section,
+            metadata={
+                "source": "internal_docs",
+                "domain": "health_simulation",
+                "document_type": "medical_examples",
+                "issue": issue_name,
+                "audience": "demo",
+                "risk_level": "low",
+                "content_scope": "educational_only"
+            }
+        )
+    )
 
 # Build vector index + apply chunking strategy
-index = VectorStoreIndex.from_documents(
-    documents,
-    transformations = [splitter]
-)
+index = VectorStoreIndex.from_documents(documents)
 
 # Define metadata filters explicitly
 filters = MetadataFilters(
@@ -98,9 +115,12 @@ Answer:
 # Metadata filtering during quering
 query_engine = index.as_query_engine(
     filters = filters,
-    similarity_top_k = 3,
+    similarity_top_k = 2,
     response_mode = "compact",
-    text_qa_template = PromptTemplate(text_qa_template_str)
+    text_qa_template = PromptTemplate(text_qa_template_str),
+    node_postprocessors = [
+        SimilarityPostprocessor(similarity_cutoff = 0.75)
+    ]
 )
 
 # Query -> Response

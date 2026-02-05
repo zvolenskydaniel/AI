@@ -1,0 +1,103 @@
+# Input#1 ---------------------------------------------------------------------------------
+2026-02-05 10:32:13,272 - INFO - User: I have a headache and sensitivity to light.
+2026-02-05 10:32:13,273 - INFO - AI Assistant: Rest in a quiet, dark environment and consider seeking medical advice if headaches are frequent or severe.
+2026-02-05 10:32:13,273 - INFO - === Source Nodes ===
+2026-02-05 10:32:13,273 - INFO - --- Source Node 1 ---
+2026-02-05 10:32:13,273 - INFO - Score: 0.8315
+2026-02-05 10:32:13,273 - INFO - Metadata: {'source': 'internal_docs', 'domain': 'health_simulation', 'document_type': 'medical_examples', 'issue': 'Headache', 'audience': 'demo', 'risk_level': 'low', 'content_scope': 'educational_only'}
+2026-02-05 10:32:13,274 - INFO - Text:
+Issue: Headache
+
+Symptoms:
+- Pain or pressure in the head
+- Sensitivity to light or sound
+- Tight feeling around the forehead or temples
+- Fatigue
+
+Description:
+Headaches are a common condition that can result from stress, dehydration, lack of sleep,
+eye strain, or tension in neck and shoulder muscles.
+
+Solution:
+- Rest in a quiet, dark environment
+- Drink water to address possible dehydration
+- Take regular breaks from screens
+- Use relaxation techniques
+- Seek medical advice if headaches are frequent or severe
+
+2026-02-05 10:32:13,274 - INFO - === Context Sent to LLM ===
+2026-02-05 10:32:13,274 - INFO - Issue: Headache
+
+Symptoms:
+- Pain or pressure in the head
+- Sensitivity to light or sound
+- Tight feeling around the forehead or temples
+- Fatigue
+
+Description:
+Headaches are a common condition that can result from stress, dehydration, lack of sleep,
+eye strain, or tension in neck and shoulder muscles.
+
+Solution:
+- Rest in a quiet, dark environment
+- Drink water to address possible dehydration
+- Take regular breaks from screens
+- Use relaxation techniques
+- Seek medical advice if headaches are frequent or severe
+
+
+# Input#2 ---------------------------------------------------------------------------------
+2026-02-05 10:32:58,353 - INFO - User: I do not have appetite and I feel nausea.
+2026-02-05 10:32:58,353 - INFO - AI Assistant: Rest until symptoms improve, eat light and bland foods, drink fluids in small amounts, and avoid heavy or spicy meals. If symptoms persist or worsen, consult a professional.
+2026-02-05 10:32:58,353 - INFO - === Source Nodes ===
+2026-02-05 10:32:58,353 - INFO - --- Source Node 1 ---
+2026-02-05 10:32:58,353 - INFO - Score: 0.8254
+2026-02-05 10:32:58,353 - INFO - Metadata: {'source': 'internal_docs', 'domain': 'health_simulation', 'document_type': 'medical_examples', 'issue': 'Upset Stomach', 'audience': 'demo', 'risk_level': 'low', 'content_scope': 'educational_only'}
+2026-02-05 10:32:58,353 - INFO - Text:
+Issue: Upset Stomach
+
+Symptoms:
+- Nausea
+- Abdominal discomfort
+- Bloating
+- Mild diarrhea
+- Loss of appetite
+
+Description:
+An upset stomach can be caused by dietary issues, stress, mild infections,
+or intolerance to certain foods.
+
+Solution:
+- Eat light and bland foods
+- Drink fluids in small amounts
+- Avoid heavy or spicy meals
+- Rest until symptoms improve
+- Consult a professional if symptoms persist or worsen
+
+2026-02-05 10:32:58,353 - INFO - === Context Sent to LLM ===
+2026-02-05 10:32:58,353 - INFO - Issue: Upset Stomach
+
+Symptoms:
+- Nausea
+- Abdominal discomfort
+- Bloating
+- Mild diarrhea
+- Loss of appetite
+
+Description:
+An upset stomach can be caused by dietary issues, stress, mild infections,
+or intolerance to certain foods.
+
+Solution:
+- Eat light and bland foods
+- Drink fluids in small amounts
+- Avoid heavy or spicy meals
+- Rest until symptoms improve
+- Consult a professional if symptoms persist or worsen
+
+# Input#3 ---------------------------------------------------------------------------------
+2026-02-05 10:34:34,541 - INFO - User: I cannot stand on my leg as my big toe hurts a lot.
+2026-02-05 10:34:34,542 - INFO - AI Assistant: I do not have enough information in the provided knowledge base.
+2026-02-05 10:34:34,542 - INFO - === Source Nodes ===
+2026-02-05 10:34:34,542 - INFO - === Context Sent to LLM ===
+2026-02-05 10:34:34,542 - INFO - 
