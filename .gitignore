@@ -34,3 +34,6 @@ $RECYCLE.BIN/
 
 # Virtual environments
 */venv
+
+# Logger files
+*/examples/logger/*log
