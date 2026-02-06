@@ -6,9 +6,10 @@
 import logging
 import os
 from dotenv import load_dotenv
-from llama_index.core import VectorStoreIndex, SimpleDirectoryReader
+from llama_index.core import VectorStoreIndex, SimpleDirectoryReader, Settings
 from llama_index.core.node_parser import SentenceSplitter
 from llama_index.core.vector_stores import MetadataFilter, MetadataFilters
+from llama_index.llms.openai import OpenAI
 
 # Set logging
 logging.getLogger("openai").setLevel(logging.WARNING)
@@ -17,6 +18,12 @@ logging.getLogger("llama_index").setLevel(logging.WARNING)
 
 # Load .env
 load_dotenv()
+
+# LLM model definition
+Settings.llm = OpenAI(
+    model = "gpt-4o-mini",
+    temperature = 0.0
+)
 
 # Get the directory where the script itself is located
 script_dir = os.path.dirname(os.path.abspath(__file__))

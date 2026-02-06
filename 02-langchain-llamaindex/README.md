@@ -19,7 +19,7 @@ By the end of this chapter, the focus is on moving from single prompt–response
 - [Document Indexing and Querying](#document-indexing-and-querying)
 - [Modular AI pipelines](#modular-ai-pipelines)
 - [Summary](#summary)
-- [Example: AI Assistant Using Python Libraries LlamaIndex and LangChain](https://github.com/zvolenskydaniel/AI/blob/main/02-langchain-llamaindex/ai_assistant_example.md)
+- [Example: AI Assistant Using Python Library LlamaIndex](https://github.com/zvolenskydaniel/AI/blob/main/02-langchain-llamaindex/ai_assistant_example.md)
 
 ## Why Frameworks Are Needed
 As AI applications grow in complexity, challenges such as context management, prompt reuse, tool integration, and data retrieval become difficult to handle with ad-hoc code. Frameworks like **LangChain** and **LlamaIndex** address these challenges by providing standardized abstractions and patterns.
