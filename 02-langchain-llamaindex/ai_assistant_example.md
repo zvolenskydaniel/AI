@@ -1,4 +1,4 @@
-# Example: AI Assistant Using Python Libraries LlamaIndex and LangChain
+# Example: AI Assistant Using Python Library LlamaIndex
 
 ## Table of content
 - [Objective](#objective)
@@ -12,7 +12,7 @@
 - [Future Improvements](#future-improvements)
 
 ## Objective
-This project serves as a presentation and simulation demonstrating how AI can be used in a business environment for troubleshooting purposes.
+This project serves as a presentation and simulation demonstrating how AI can be used in a business environment for troubleshooting purposes by using a company's internal documentation.
 
 The simulation topic focuses on a set of well-known medical conditions (*e.g. flu, cough, burns, headache, etc.*).
 
