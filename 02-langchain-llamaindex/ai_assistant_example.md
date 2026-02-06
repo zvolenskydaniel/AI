@@ -21,7 +21,8 @@ It is assumed that users are already familiar with these common conditions, incl
 ## Legal & Safety Disclaimer
 This project is intended **solely for educational, demonstration, and simulation purposes**.
 
-The AI assistant does **not** provide medical advice, medical diagnosis, or treatment recommendations.  
+The AI assistant does **not** provide medical advice, medical diagnosis, or treatment recommendations.
+
 All information presented by the assistant is based on predefined, high-level example data and is designed to demonstrate AI troubleshooting workflows rather than real-world medical decision-making.
 
 Users must not rely on this system for health-related decisions.  
