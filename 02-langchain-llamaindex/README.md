@@ -344,16 +344,234 @@ Because the structure of the messages is maintained, previously stored conversat
 
 This enables the assistant to retain knowledge across sessions, effectively simulating long-term memory.
 
-#### Memory Growth and Summarization
+#### Framework-Provided Memory
+In professional AI development, short-term memory isn't just a growing list - it’s a managed state. LangChain provides set of tools, which allow to build professional state management system.
 
-As long-term memory grows over time, storing the full conversation history may become inefficient or impractical.
+Below example displays the LangGraph Checkpointer approach. It treats memory as a *"database of states"*.
+
+```python
+# langchain_shortterm_memory.py
+from dotenv import load_dotenv
+from langchain_openai import ChatOpenAI
+from langchain.agents import create_agent
+from langchain.messages import HumanMessage
+from langgraph.checkpoint.memory import InMemorySaver
+
+# Load .env
+load_dotenv()
+
+# Initialize model
+llm = ChatOpenAI(
+    model = "gpt-4o-mini",
+    temperature = 0.2
+)
+
+# Create the Agent
+agent = create_agent(
+    model = llm,
+    tools = [],
+    system_prompt = "You are a helpful assistant.",
+    checkpointer = InMemorySaver()
+)
+
+while True:
+    # Get user input
+    user_input = input("You: ").strip()
+    if user_input.lower() in ("exit", "quit", "q"):
+        print("Bye!")
+        break
+
+    # Invoke LLM
+    ai_message = agent.invoke(
+        {
+            "messages": [
+                HumanMessage(content = user_input)
+            ]
+        },
+        {
+            "configurable": {
+                "thread_id": "1"
+            }
+        }
+    )
+
+    # Get response content
+    content = ai_message["messages"][-1].content
+    print("Assistant:", content)
+
+```
+
+With short-term memory enabled, long conversations can exceed the LLM's context window. Next sections are going to introduce message **trimming** and **summarization**.
+
+#### Memory Growth and Trim Messages
+Trim Messages provides strategy of maximum tokens allowed in the message history and strategy to be applied for handling the boundary. The messages are truncated once the limit is reached.
+
+```python
+# langchain_shortterm_memory_trim.py
+from dotenv import load_dotenv
+from langchain_openai import ChatOpenAI
+from langchain_core.runnables import RunnableConfig
+from langchain_core.messages import HumanMessage
+from langchain.agents import create_agent, AgentState
+from langchain.agents.middleware import before_model
+from langchain.messages import RemoveMessage
+from langgraph.checkpoint.memory import InMemorySaver
+from langgraph.graph.message import REMOVE_ALL_MESSAGES
+from langgraph.runtime import Runtime
+from typing import Any
+
+# Load OPEN_AI_KEY
+load_dotenv()
+
+# Define LLM
+llm = ChatOpenAI(
+    model = "gpt-4o-mini",
+    temperature = 0
+)
+
+# --- TRIMMING LOGIC ---
+@before_model
+def trim_messages(state: AgentState, runtime: Runtime) -> dict[str, Any] | None:
+    """
+    Trim conversation history to keep the context window bounded.
+    - Keeps only the last MAX_MESSAGES messages.
+    - Returns None if no trimming is required.
+    """
+    MAX_MESSAGES = 4
+
+    messages = state["messages"]
+
+    # Nothing to trim
+    if len(messages) <= MAX_MESSAGES:
+        return None  # No changes needed
+
+    recent_messages = messages[-MAX_MESSAGES:]
+    new_messages = recent_messages
+
+    return {
+        "messages": [
+            RemoveMessage(id = REMOVE_ALL_MESSAGES),
+            *new_messages
+        ]
+    }
+
+# Create the Agent with the trimming logic as a state_modifier
+agent = create_agent(
+    model = llm,
+    tools = [],
+    system_prompt = "You are a helpful assistant.",
+    middleware = [trim_messages],
+    checkpointer = InMemorySaver()
+)
+
+while True:
+    # Get user input
+    user_input = input("You: ").strip()
+    if user_input.lower() in ("exit", "quit", "q"):
+        print("Bye!")
+        break
+
+    # Invoke LLM
+    ai_message = agent.invoke(
+        {
+            "messages": [
+                HumanMessage(content = user_input)
+            ]
+        },
+        {
+            "configurable": {
+                "thread_id": "1"
+            }
+        }
+    )
+
+    # Get response content
+    content = ai_message["messages"][-1].content
+    print("Assistant:", content)
+```
+
+#### Memory Growth and Summarization
+As memory grows over time, storing the full conversation history may become inefficient or impractical. Moreover, trimming may lose important messages.
 
 A common optimization strategy is **memory summarization**, where:
 - older conversation segments are periodically summarized
 - detailed message history is replaced with concise semantic summaries
 - the overall context is preserved while significantly reducing storage size
 
-This approach allows long-term memory to scale while remaining performant and cost-efficient.
+This approach allows memory to scale while remaining performant and cost-efficient.
+
+```python
+# langchain_shortterm_memory_summarize.py
+from dotenv import load_dotenv
+from langchain_core.runnables import RunnableConfig
+from langchain_openai import ChatOpenAI
+from langchain.agents import create_agent
+from langchain.agents.middleware import SummarizationMiddleware
+from langchain.messages import HumanMessage
+from langgraph.checkpoint.memory import InMemorySaver
+
+# Load .env
+load_dotenv()
+
+# Initialize model
+llm = ChatOpenAI(
+    model = "gpt-4o-mini",
+    temperature = 0.2
+)
+
+# Create the Agent
+agent = create_agent(
+    model = llm,
+    tools = [],
+    system_prompt = "You are a helpful assistant.",
+    middleware = [
+        SummarizationMiddleware(
+            model = llm,
+            trigger = ("tokens", 4000),
+            keep = ("messages", 20)
+        )
+    ],
+    checkpointer = InMemorySaver()
+)
+
+while True:
+    # Get user input
+    user_input = input("You: ").strip()
+    if user_input.lower() in ("exit", "quit", "q"):
+        print("Bye!")
+        break
+
+    # Invoke LLM
+    ai_message = agent.invoke(
+        {
+            "messages": [
+                HumanMessage(content = user_input)
+            ]
+        },
+        {
+            "configurable": {
+                "thread_id": "1"
+            }
+        }
+    )
+
+    # Get response content
+    content = ai_message["messages"][-1].content
+    print("Assistant:", content)
+
+```
+
+- `trigger = ("tokens", 4000)` - when total token count exceeds 4000 → summarize
+- `keep = ("messages", 20)` - after summarization → keep last 20 raw messages
+
+#### Memory Strategy Comparison Table
+| Strategy      | Preserves Full Context | Token Efficient | Production Suitable | Risk             |
+| ------------- | ---------------------- | --------------- | ------------------- | ---------------- |
+| Manual List   | Yes                    | ❌ No           | ❌ No              | Context overflow |
+| Trim          | Partial                | ✅ Yes          | ⚠️ Depends         | Information loss |
+| Summarization | Semantic               | ✅ Yes          | ✅ Yes             | Summary drift    |
+
+> In production deployments, a persistent checkpointer (*e.g., SQLite or Postgres*) should be used instead of `InMemorySaver` to ensure durability across restarts.
 
 ## Retrieval-Augmented Generation (RAG)
 **Retrieval-Augmented Generation (RAG)** is an AI framework that combines information retrieval with generative AI to create more accurate, up-to-date, and contextually relevant responses. It works by first retrieving relevant information from an external knowledge base, like a company's internal documents or the latest internet data, and then feeding this information into a Large Language Model (LLM) to generate a response. This process grounds the LLM's answer in specific facts, reduces the risk of "hallucinations" (*generating incorrect information*), and allows the model to reference sources, making it more reliable and efficient than simply relying on its pre-trained knowledge.
