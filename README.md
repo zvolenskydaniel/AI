@@ -20,7 +20,7 @@ The repository is structured hierarchically, starting with fundamental concepts 
    - Document indexing and querying
    - Modular AI pipelines
 
-3. **Automation & Agent-Based Systems**
+3. [**Automation & Agent-Based Systems**](https://github.com/zvolenskydaniel/AI/blob/main/03-automation-and-agend-based-systems/README.md)
    - Single-agent vs multi-agent design
    - CrewAI and AutoGen fundamentals
    - Task orchestration and delegation
