@@ -22,7 +22,7 @@ The repository is structured hierarchically, starting with fundamental concepts 
 
 3. [**Automation & Agent-Based Systems**](https://github.com/zvolenskydaniel/AI/blob/main/03-automation-and-agend-based-systems/README.md)
    - Single-agent vs multi-agent design
-   - CrewAI and AutoGen fundamentals
+   - CrewAI, LangGraph and AutoGen Fundamentals
    - Task orchestration and delegation
    - Failure handling and observability
 

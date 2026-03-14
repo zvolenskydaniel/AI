@@ -2,6 +2,8 @@
 # 2026.03 AI: Learning Path
 # zvolensky.daniel@gmail.com
 #
+# Linear Agent
+#
 
 class Tools:
 
@@ -61,7 +63,7 @@ class NetworkChangeAgent:
 
         return f"Change completed. Interface state: {verification['state']}"
 
-
+# --- Execution ---
 agent = NetworkChangeAgent()
 
 change = {

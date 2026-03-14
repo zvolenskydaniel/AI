@@ -2,6 +2,8 @@
 # 2026.03 AI: Learning Path
 # zvolensky.daniel@gmail.com
 #
+# Phase-Based State Machine Agent
+#
 
 class Tools:
 
@@ -67,6 +69,8 @@ class NetworkChangeAgent:
 
         return self.state["result"]
 
+    
+    # --- Phase Handlers ---
     def handle_validation(self, change_request):
         # 1. Validate
         validation = Tools.validate_change(change_request)
@@ -122,7 +126,7 @@ class NetworkChangeAgent:
         self.state["result"] = "Change rolled back due to failed verification."
         self.state["phase"] = "done"
 
-
+# --- Execution ---
 agent = NetworkChangeAgent()
 
 change = {
