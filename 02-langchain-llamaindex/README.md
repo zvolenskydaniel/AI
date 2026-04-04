@@ -1,6 +1,8 @@
 # LangChain & LlamaIndex
+---
 
 ## Overview
+---
 The previous chapter introduced the fundamentals of integrating Large Language Models (LLMs) into Python applications using direct API calls. While this approach is sufficient for simple use cases, real-world AI applications often require more structure, composability, and control.
 
 This chapter introduces **LangChain** and **LlamaIndex**, two open-source frameworks designed to help build more complex LLM-powered systems. These frameworks provide higher-level abstractions for composing prompts, managing context and memory, integrating external tools and data sources, and orchestrating multi-step workflows.
@@ -8,25 +10,89 @@ This chapter introduces **LangChain** and **LlamaIndex**, two open-source framew
 Rather than replacing direct API usage, *LangChain* and *LlamaIndex* build on top of it, enabling scalable and maintainable AI application architectures.
 
 ## Goal
+---
 The goal of this chapter is to understand how higher-level frameworks can be used to design structured, modular, and production-oriented AI systems.
 
 By the end of this chapter, the focus is on moving from single prompt–response interactions toward applications that combine multiple steps, external data, and reusable components.
 
 ## Core Concepts
+---
 - [Why Frameworks Are Needed](#why-frameworks-are-needed)
 - [Chains, Tools, and Memory](#chains-tools-and-memory)
+  - [Conceptual Overview]()
+  - [Chains]()
+    - [Minimal LangChain Chain Example]()
+  - [Tools]()
+    - [Conceptual Tool Example]()
+  - [Memory]()
+    - [Manual Short-Term Memory Example]()
+    - [Manual Long-Term Memory Example]()
+    - [Framework-Provided Memory]()
+    - [Memory Growth and Trim Messages]()
+    - [Memory Growth and Summarization]()
+    - [Memory Strategy Comparison Table]()
+  - [Minimal RAG Example]()
+  - [Explicit Retrieval + Generation Pipeline Example]()
 - [Retrieval-Augmented Generation (RAG)](#retrieval-augmented-generation-rag)
+  - [Minimal RAG Example]()
+  - [Explicit Retrieval + Generation Pipeline Example]()
 - [Document Indexing and Querying](#document-indexing-and-querying)
+  - [Document Loading]()
+    - [Supported Sources]()
+    - [Loading Files]()
+    - [Loading Specific File Types]()
+    - [Recursive Loading]()
+    - [Multiple Sources]()
+    - [Common Document Loading Pitfalls]()
+  - [Metadata Enrichment]()
+  - [Document Chunking Strategies]()
+    - [Why Chunking Matters]()
+    - [Fixed-Size Chunking]()
+    - [Sentence-Based Chunking]()
+    - [Paragraph and Section-Based Chunking]()
+    - [Sliding Window Chunking]()
+    - [Inspecting Chunks]()
+    - [Choosing a Strategy]()
+  - [Embeddings and Index Construction]()
+    - [What Embeddings Represent]()
+    - [How Chunking Affects Embeddings]()
+    - [Building an Index from Documents]()
+    - [Common Embedding Pitfalls]()
+  - [Querying and Retrieval]()
+    - [Basic Semantic Querying]()
+    - [Semantic Search]()
+    - [Metadata-Base Filtering]()
+    - [Debugging Retrieval]()
+  - [Combining Metadata and Chunking]()
+    - [Load Document with Metadata]()
+    - [Apply a Chunking Strategy (Sentence-Based)]()
+    - [Inspect Chunks + Metadata]()
+    - [Query Using Metadata Filtering]()
+  - [Common Indexing Pitfalls]()
 - [Modular AI pipelines](#modular-ai-pipelines)
+  - [Composable Components]()
+  - [Swapping Retrievers, LLMs, Tools]()
+    - [Swapping Retrievers]()
+    - [Swapping LLMs]()
+    - [Adding Tools to the Pipeline]()
+  - [Production-Ready Patterns]()
+    - [Clear Separation of Concerns]()
+    - [Configuration Over Code]()
+    - [Observability and Logging]()
+    - [Fallbacks and Guardrails]()
+    - [Stateless Core + Optional Memory]()
 - [Summary](#summary)
+- [What’s Next]()
 - [Example: AI Assistant Using Python Library LlamaIndex](https://github.com/zvolenskydaniel/AI/blob/main/02-langchain-llamaindex/ai_assistant_example.md)
 
 ## Why Frameworks Are Needed
+---
 As AI applications grow in complexity, challenges such as context management, prompt reuse, tool integration, and data retrieval become difficult to handle with ad-hoc code. Frameworks like **LangChain** and **LlamaIndex** address these challenges by providing standardized abstractions and patterns.
 
 ## Chains, Tools, and Memory
-
+---
 ### Conceptual Overview
+---
 After learning how to call an LLM directly via an API (*Chapter 1*), the next challenge is **orchestration**:
 - How do we break a task into multiple steps?
 - How do we combine LLM reasoning with external systems (*APIs, databases, tools*)?
@@ -44,6 +110,7 @@ At a high level:
 - *memory* allows LLM-based applications to remember past interactions
 
 ### Chains
+---
 A **chain** is a sequence of operations where:
 - inputs flow through one or more steps
 - each step may involve an LLM call, a prompt template, or a transformation
@@ -57,8 +124,9 @@ Example use cases:
 - ask a question → refine it → answer with context
 
 #### Minimal LangChain Chain Example
+---
 ```python
-# minimal_langchain_chain_example.py
+# 02-langchain-llamaindex/examples/minimal_langchain_chain_example.py
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
 from langchain.messages import SystemMessage, HumanMessage
@@ -91,6 +159,7 @@ print(ai_message.content)
 ```
 
 ### Tools
+---
 In *LangChain*, a **tool** is a callable interface (*typically a Python function*) that acts as a specialized skill for an AI agent, allowing it to interact with the outside world, execute code, fetch real-time data, or call APIs. Tools enable LLMs to move beyond text generation by providing structured inputs and receiving outputs to perform actions.
 
 Tools allow LLMs to:
@@ -102,8 +171,9 @@ Tools allow LLMs to:
 > *The LLM decides **when** and **how** to use the tool.*
 
 #### Conceptual Tool Example
+---
 ```python
-# conceptual_tool_example.py
+# 02-langchain-llamaindex/examples/conceptual_tool_example.py
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
 from langchain.messages import SystemMessage, HumanMessage
@@ -159,6 +229,7 @@ When registered as a tool:
 This is how LLMs move from *text-only* to **action-capable systems**.
 
 ### Memory
+---
 **Memory** is a system that remembers information about previous interactions. For AI agents, memory is crucial because it lets them remember previous interactions, learn from feedback, and adapt to user preferences. As agents tackle more complex tasks with numerous user interactions, this capability becomes essential for both efficiency and user satisfaction. Short term memory lets your application remember previous interactions within a single thread or conversation.
 
 Without memory:
@@ -176,8 +247,9 @@ AI applications need memory to share context across multiple interactions.
 > *Below examples of manual memory strategies help clarify how memory works conceptually, before introducing framework-provided memory abstractions such as those in LangChain.*
 
 #### Manual Short-Term Memory Example
+---
 ```python
-# manual_shortterm_memory.py
+# 02-langchain-llamaindex/examples/manual_shortterm_memory.py
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
 from langchain.messages import SystemMessage, HumanMessage, AIMessage
@@ -243,8 +315,9 @@ Short-term memory is commonly used for:
 - prototyping and experimentation
 
 #### Manual Long-Term Memory Example
+---
 ```python
-# manual_longterm_memory.py
+# 02-langchain-llamaindex/examples/manual_longterm_memory.py
 import json
 import os
 from dotenv import load_dotenv
@@ -345,12 +418,13 @@ Because the structure of the messages is maintained, previously stored conversat
 This enables the assistant to retain knowledge across sessions, effectively simulating long-term memory.
 
 #### Framework-Provided Memory
+---
 In professional AI development, short-term memory isn't just a growing list - it’s a managed state. LangChain provides set of tools, which allow to build professional state management system.
 
 Below example displays the LangGraph Checkpointer approach. It treats memory as a *"database of states"*.
 
 ```python
-# langchain_shortterm_memory.py
+# 02-langchain-llamaindex/examples/langchain_shortterm_memory.py
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
 from langchain.agents import create_agent
@@ -404,10 +478,11 @@ while True:
 With short-term memory enabled, long conversations can exceed the LLM's context window. Next sections are going to introduce message **trimming** and **summarization**.
 
 #### Memory Growth and Trim Messages
+---
 Trim Messages provides strategy of maximum tokens allowed in the message history and strategy to be applied for handling the boundary. The messages are truncated once the limit is reached.
 
 ```python
-# langchain_shortterm_memory_trim.py
+# 02-langchain-llamaindex/examples/langchain_shortterm_memory_trim.py
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
 from langchain_core.runnables import RunnableConfig
@@ -491,6 +566,7 @@ while True:
 ```
 
 #### Memory Growth and Summarization
+---
 As memory grows over time, storing the full conversation history may become inefficient or impractical. Moreover, trimming may lose important messages.
 
 A common optimization strategy is **memory summarization**, where:
@@ -501,7 +577,7 @@ A common optimization strategy is **memory summarization**, where:
 This approach allows memory to scale while remaining performant and cost-efficient.
 
 ```python
-# langchain_shortterm_memory_summarize.py
+# 02-langchain-llamaindex/examples/langchain_shortterm_memory_summarize.py
 from dotenv import load_dotenv
 from langchain_core.runnables import RunnableConfig
 from langchain_openai import ChatOpenAI
@@ -565,6 +641,7 @@ while True:
 - `keep = ("messages", 20)` - after summarization → keep last 20 raw messages
 
 #### Memory Strategy Comparison Table
+---
 | Strategy      | Preserves Full Context | Token Efficient | Production Suitable | Risk             |
 | ------------- | ---------------------- | --------------- | ------------------- | ---------------- |
 | Manual List   | Yes                    | ❌ No           | ❌ No              | Context overflow |
@@ -574,13 +651,15 @@ while True:
 > In production deployments, a persistent checkpointer (*e.g., SQLite or Postgres*) should be used instead of `InMemorySaver` to ensure durability across restarts.
 
 ## Retrieval-Augmented Generation (RAG)
+---
 **Retrieval-Augmented Generation (RAG)** is an AI framework that combines information retrieval with generative AI to create more accurate, up-to-date, and contextually relevant responses. It works by first retrieving relevant information from an external knowledge base, like a company's internal documents or the latest internet data, and then feeding this information into a Large Language Model (LLM) to generate a response. This process grounds the LLM's answer in specific facts, reduces the risk of "hallucinations" (*generating incorrect information*), and allows the model to reference sources, making it more reliable and efficient than simply relying on its pre-trained knowledge.
 
 **LlamaIndex** excels in search and retrieval tasks. It’s a powerful tool for data indexing and querying and a great choice for projects that require advanced search. LlamaIndex enables the handling of large datasets, resulting in quick and accurate information retrieval.
 
 ### Minimal RAG Example
+---
 ```python
-# rag_basic.py
+# 02-langchain-llamaindex/examples/rag_basic.py
 import os
 from dotenv import load_dotenv
 from llama_index.core import VectorStoreIndex, SimpleDirectoryReader
@@ -641,8 +720,9 @@ What’s happening internally:
 
 
 ### Explicit Retrieval + Generation Pipeline Example
+---
 ```python
-# rag_explicit.py
+# 02-langchain-llamaindex/examples/rag_explicit.py
 import os
 from dotenv import load_dotenv
 from llama_index.core import VectorStoreIndex, SimpleDirectoryReader
@@ -702,6 +782,7 @@ The above example:
 - serve as a preparation example for custom RAG pipelines
 
 ## Document Indexing and Querying
+---
 **Document indexing and querying** form the backbone of Retrieval-Augmented Generation (RAG) systems. This process defines how raw documents are transformed into searchable knowledge and how relevant information is later retrieved and injected into Large Language Model (LLM) prompts.
 
 **Indexing** typically involves loading documents, splitting them into meaningful chunks, generating vector embeddings, and storing those embeddings in an index optimized for similarity search. **Querying** then uses this index to efficiently identify the most relevant pieces of information in response to a user’s question.
@@ -711,6 +792,7 @@ The above example:
 In this section, we explore how *LangChain* and *LlamaIndex* handle document indexing and querying, focusing on practical design choices, common trade-offs, and techniques for building reliable and scalable retrieval pipelines.
 
 ### Document Loading
+---
 **Document loading** is the first step in the document indexing pipeline. It is the process of ingesting raw data from various sources and converting it into a standardized internal representation that can be further processed, chunked, embedded, and indexed.
 
 The quality and structure of loaded documents directly influence all downstream stages of a Retrieval-Augmented Generation (RAG) system. Poorly loaded or incomplete data can result in missing context, inaccurate retrieval, or misleading responses, regardless of how well chunking or querying is implemented.
@@ -718,6 +800,7 @@ The quality and structure of loaded documents directly influence all downstream 
 *LlamaIndex* provides a flexible document loading system that supports multiple data sources, formats, and preprocessing strategies, allowing developers to adapt ingestion pipelines to different use cases.
 
 #### Supported Sources
+---
 Documents can be loaded from a variety of sources, including:
 - local text files
 - PDFs and Word documents
@@ -729,8 +812,9 @@ Documents can be loaded from a variety of sources, including:
 In this learning path, examples focus on local files to keep the core concepts clear and reproducible.
 
 #### Loading Files
+---
 ```python
-# load_local_txt.py
+# 02-langchain-llamaindex/examples/load_local_txt.py
 import os
 from llama_index.core import SimpleDirectoryReader
 
@@ -762,8 +846,9 @@ print(doc.metadata)
 ```
 
 #### Loading Specific File Types
+---
 ```python
-# load_specific_file.py
+# 02-langchain-llamaindex/examples/load_specific_file.py
 import os
 from llama_index.core import SimpleDirectoryReader
 
@@ -784,6 +869,7 @@ print(f"Loaded {len(documents)} document(s).")
 ```
 
 #### Recursive Loading
+---
 ```python
 import os
 from llama_index.core import SimpleDirectoryReader
@@ -812,6 +898,7 @@ print(f"Loaded {len(documents)} document(s).")
 > - internal wikis
 
 #### Multiple Sources
+---
 ```python
 documents = []
 
@@ -822,12 +909,14 @@ documents += SimpleDirectoryReader("reports").load_data()
 ```
 
 #### Common Document Loading Pitfalls
+---
 - loading raw PDFs without text normalization
 - including boilerplate content (headers, footers, navigation)
 - mixing unrelated document types in a single index
 - ignoring metadata during ingestion
 
 ### Metadata Enrichment
+---
 *Metadata* provides additional context about documents, such as file names, timestamps, categories, or access levels. This metadata can later be used for filtering, ranking, or auditing retrieved results.
 
 > Think of **metadata** as *labels attached to chunks of knowledge*. Metadata answers where it came from, what it is, and how it should be used.
@@ -847,7 +936,7 @@ Therefore, on the base of metadata you can:
 - debug why something was retrieved
 
 ```python
-# metadata_example.py
+# 02-langchain-llamaindex/examples/metadata_example.py
 import os
 from llama_index.core import SimpleDirectoryReader
 
@@ -881,11 +970,13 @@ print(doc.metadata)
 > While optional for small demos, metadata becomes essential in production-scale applications.
 
 ### Document Chunking Strategies
+---
 **Document chunking** is the process of splitting large documents into smaller, manageable pieces (*chunks*) before they are indexed and embedded. Since Large Language Models (LLMs) have context length limits and operate on token-based inputs, chunking plays a critical role in ensuring that relevant information can be efficiently retrieved and accurately used during response generation.
 
 Effective chunking improves retrieval accuracy, reduces hallucinations, and helps balance performance, cost, and contextual completeness in **Retrieval-Augmented Generation (RAG)** systems.
 
 #### Why Chunking Matters
+---
 - LLMs cannot process entire large documents at once
 - retrieval operates on chunks, not whole files
 - poor chunking leads to:
@@ -894,6 +985,7 @@ Effective chunking improves retrieval accuracy, reduces hallucinations, and help
   - increased hallucinations
 
 #### Fixed-Size Chunking
+---
 **Fixed-size chunking** is a straightforward, computationally efficient RAG technique that splits text into uniform segments based on a set number of characters, tokens, or words, typically using a 10-20% overlap to maintain context. It is ideal for quick prototyping and uniform text, though it risks breaking sentences and semantic coherence (*split sentences or ideas, context may be fragmented*).
 
 ```python
@@ -919,6 +1011,7 @@ index = VectorStoreIndex.from_documents(
 > - `chunk_overlap`: 10–20%
 
 #### Sentence-Based Chunking
+---
 **Sentence-based chunking** is a natural language processing strategy that splits text at sentence boundaries (*e.g., periods, question marks*) to create chunks containing one or more full sentences. This method ensures high semantic coherence and readability for RAG and Q&A systems, as it avoids cutting off mid-thought unlike fixed-size methods.
 
 ```python
@@ -941,6 +1034,7 @@ index = VectorStoreIndex.from_documents(
 > This is the **recommended default** for most RAG use cases.
 
 #### Paragraph and Section-Based Chunking
+---
 **Paragraph and section-based chunking** are structural strategies in Retrieval-Augmented Generation (RAG) that divide documents based on natural formatting — paragraphs, headers, or markdown — to preserve semantic context. These methods create coherent, logical chunks ideal for structured documents like manuals or reports, enhancing retrieval relevance compared to fixed-size methods.
 
 ```python
@@ -960,6 +1054,7 @@ index = VectorStoreIndex.from_documents(
 ```
 
 #### Sliding Window Chunking
+---
 **Sliding window chunking** is a text segmentation strategy for RAG that creates overlapping text segments by moving a fixed-size window over data, usually with a 10–20% overlap, to preserve context between chunks. It prevents information loss at boundaries, enhancing retrieval accuracy for continuous text like legal or medical documents, though it increases storage costs and redundancy.
 
 ```python
@@ -979,6 +1074,7 @@ index = VectorStoreIndex.from_documents(
 ```
 
 #### Inspecting Chunks
+---
 The below code allows to see what model sees and helps identify why retrieval succeeds or fails.
 
 ```python
@@ -991,6 +1087,7 @@ for i, node in enumerate(nodes[:3]):
 ```
 
 #### Choosing a Strategy
+---
 
 | Use Case           | Strategy                 |
 | ------------------ | ------------------------ |
@@ -1003,8 +1100,9 @@ for i, node in enumerate(nodes[:3]):
 > ***Chunking** is not a preprocessing detail — it is a core design decision in RAG systems. Poor chunking cannot be fixed by better prompts or stronger models.*
 
 ### Embeddings and Index Construction
-
+---
 #### What Embeddings Represent
+---
 **Embeddings** are dense numerical vectors that capture the semantic meaning of text. Instead of representing words as discrete symbols, embeddings position text in a high-dimensional space where:
 - semantically similar texts are close together
 - unrelated texts are far apart
@@ -1023,6 +1121,7 @@ Example:
 Different words, but embeddings place them close together.
 
 #### How Chunking Affects Embeddings
+---
 LLMs embed chunks, not entire documents. The chunking strategy directly shapes what the embeddings represent.
 
 | Chunking Choice       | Effect on Embeddings                  |
@@ -1046,6 +1145,7 @@ nodes = splitter.get_nodes_from_documents(documents)
 ```
 
 #### Building an Index from Documents
+---
 Once documents are:
 - loaded
 - chunked
@@ -1060,7 +1160,8 @@ index = VectorStoreIndex.from_documents(documents)
 
 ```
 
-#### Common embedding pitfalls
+#### Common Embedding Pitfalls
+---
 - chunking too large, which leads to:
   - embedding mixes multiple topics
   - retrieval becomes inaccurate
@@ -1083,10 +1184,12 @@ index = VectorStoreIndex.from_documents(documents)
 > chunking defines meaning → embeddings encode meaning → indexes enable retrieval → LLM generates answers
 
 ### Querying and Retrieval
+---
 Once documents are indexed, the system’s main job becomes retrieval: finding the most relevant chunks to answer a user’s question.
 Retrieval is driven by semantic similarity, not exact keyword matching.
 
 #### Basic Semantic Querying 
+---
 **Basic semantic querying** is the simplest form of interaction with a vector index.
 - user submits a question
 - the question is converted into an embedding
@@ -1111,6 +1214,7 @@ print(f"Response: {response}\n")
 > **Key characteristic:** The user does not need to match document wording exactly.
 
 #### Semantic Search
+---
 Semantic search focuses on *finding relevant information*, not necessarily generating a long answer.
 
 **Semantic search vs basic querying**
@@ -1135,8 +1239,9 @@ for node in nodes:
 ```
 
 #### Metadata-Base Filtering
+---
 ```python
-# metadata_access_control.py
+# 02-langchain-llamaindex/examples/metadata_access_control.py
 import logging
 import os
 from dotenv import load_dotenv
@@ -1232,8 +1337,9 @@ response = query_engine.query(
 ```
 
 #### Debugging Retrieval
+---
 ```python
-# metadata_retrieving.py
+# 02-langchain-llamaindex/examples/metadata_retrieving.py
 import logging
 import os
 from dotenv import load_dotenv
@@ -1277,6 +1383,7 @@ for node in nodes:
 ```
 
 ### Combining Metadata and Chunking
+---
 Combining *metadata* with *chunking strategies* is essential for building production-ready Retrieval-Augmented Generation (RAG) systems. While **chunking** breaks large documents into manageable, semantic pieces (*e.g., sentences, paragraphs*), **metadata** provides the *"context about the content"* — such as document title, page number, section headers, author, or data type (*e.g., code vs. text*).
 
 By tagging every chunk with structured metadata, you can filter, prioritize, and manage data efficiently, improving retrieval precision and preventing *"cross-document contamination"*.
@@ -1297,8 +1404,9 @@ LLM Answer
 > Metadata is attached before chunking, but applied after chunking.
 
 #### Load Document with Metadata
+---
 ```python
-# metadata_and_chunking.py
+# 02-langchain-llamaindex/examples/metadata_and_chunking.py
 import os
 from llama_index.core import SimpleDirectoryReader
 
@@ -1317,8 +1425,9 @@ documents = SimpleDirectoryReader(
 - no chunking yet
 
 #### Apply a Chunking Strategy (Sentence-Based)
+---
 ```python
-# metadata_and_chunking.py
+# 02-langchain-llamaindex/examples/metadata_and_chunking.py
 from llama_index.core.node_parser import SentenceSplitter
 from llama_index.core import VectorStoreIndex
 
@@ -1338,8 +1447,9 @@ index = VectorStoreIndex.from_documents(
 - metadata is copied to every chunk derived from the document
 
 #### Inspect Chunks + Metadata
+---
 ```python
-# metadata_and_chunking.py
+# 02-langchain-llamaindex/examples/metadata_and_chunking.py
 nodes = splitter.get_nodes_from_documents(documents)
 
 for node in nodes:
@@ -1353,8 +1463,9 @@ for node in nodes:
 - inspect whether metadata survived intact
 
 #### Query Using Metadata Filtering
+---
 ```python
-# metadata_and_chunking.py
+# 02-langchain-llamaindex/examples/metadata_and_chunking.py
 from llama_index.core.vector_stores import MetadataFilter, MetadataFilters
 
 filters = MetadataFilters(
@@ -1386,17 +1497,20 @@ print(response)
 - metadata ensures domain correctness
 
 ### Common Indexing Pitfalls
+---
 - applying metadata after indexing (too late)
 - using inconsistent metadata keys
 - chunk sizes that don’t match question granularity
 - overlapping metadata filters that return zero chunks
 
 ## Modular AI Pipelines
+---
 As AI applications grow in complexity, a single prompt or script quickly becomes insufficient. **Modular AI pipelines** address this by breaking AI systems into composable, interchangeable components that can be developed, tested, and evolved independently.
 
 Both **LangChain** and **LlamaIndex** are designed around this principle.
 
 ### Composable Components
+---
 A modular AI pipeline typically consists of the following building blocks:
 - Data Ingestion
   - document loaders
@@ -1420,9 +1534,11 @@ A modular AI pipeline typically consists of the following building blocks:
 Each component has a single responsibility, which makes the system easier to maintain and extend.
 
 ### Swapping Retrievers, LLMs, Tools
+---
 One of the biggest advantages of modern AI frameworks is the ability to swap components without rewriting the pipeline.
 
 #### Swapping Retrievers
+---
 ```python
 # Default semantic retriever
 retriever = index.as_retriever(similarity_top_k = 3)
@@ -1438,6 +1554,7 @@ retriever = index.as_retriever(
 The rest of the pipeline remains unchanged.
 
 #### Swapping LLMs
+---
 ```python
 from llama_index.llms.openai import OpenAI
 
@@ -1462,6 +1579,7 @@ No changes to:
 - retrieval logic
 
 #### Adding Tools to the Pipeline
+---
 ```python
 @tools
 def fetch_employee_count():
@@ -1480,13 +1598,15 @@ Tools can be:
 …without impacting retrieval or indexing.
 
 ### Production-Ready Patterns
-
-#### Clear separation of concerns
+---
+#### Clear Separation of Concerns
+---
 - retrieval logic ≠ generation logic
 - data loading ≠ indexing
 - prompt design ≠ business logic
 
 #### Configuration Over Code
+---
 ```python
 PIPELINE_CONFIG = {
     "model": "gpt-4o-mini",
@@ -1499,6 +1619,7 @@ PIPELINE_CONFIG = {
 Avoid hardcoding decisions inside functions.
 
 #### Observability and Logging
+---
 Track:
 - retrieved chunks
 - token usage
@@ -1508,12 +1629,14 @@ Track:
 This is critical for debugging and cost control.
 
 #### Fallbacks and Guardrails
+---
 - retry on API failures
 - use smaller models for low-risk queries
 - validate structured outputs
 - apply metadata filters defensively
 
 #### Stateless Core + Optional Memory
+---
 Design pipelines so they:
 - work without memory
 - improve with memory
@@ -1525,6 +1648,7 @@ This allows safe scaling and easier testing.
 > A modular AI pipeline is not a single “AI system” — it is a flexible assembly of specialized parts.
 
 ## Summary
+---
 This chapter explored how **LangChain** and **LlamaIndex** enable the construction of structured, reliable, and scalable AI applications beyond simple prompt–response interactions.
 
 We started by introducing chains, tools, and memory, establishing how complex behaviors can be decomposed into manageable, reusable components. By separating reasoning, action, and state, AI systems become easier to extend, debug, and maintain.
@@ -1538,10 +1662,11 @@ Finally, we introduced modular AI pipelines, emphasizing composability, intercha
 Together, these concepts form a strong foundation for building AI-powered systems that reason over data, adapt to context, and scale beyond experimentation.
 
 ## What’s Next
+---
 The next section, **Automation & Agent-Based Systems**, builds on this foundation by shifting from single, modular pipelines to autonomous and semi-autonomous agents.
 
 This chapter will focus on:
 - single-agent vs multi-agent system design
-- CrewAI and AutoGen fundamentals
+- CrewAI, LangGraph and AutoGen fundamentals
 - task orchestration, role specialization, and delegation
 - failure handling, retries, and observability

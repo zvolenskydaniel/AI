@@ -2,13 +2,12 @@
 # 2026.03 AI: Learning Path
 # zvolensky.daniel@gmail.com
 #
-# Mimnic LangGraph's Dynamic Replanning Loop
+# Mimnic LangGraph: Dynamic Replanning Loop with Reliability and Tiered Escalation Patterns
 #
 
 import sys
 
 class Tools:
-
     @staticmethod
     def validate(change_request):
         return {"status": "valid"} if "interface" in change_request else {"status": "invalid"}
@@ -26,58 +25,40 @@ class Tools:
 
     @staticmethod
     def verify(interface):
-        # Forced failure to trigger the HITL Rollback scenario
+        # Still forced failure to demonstrate the retry-then-escalate logic
         return {"state": "down"}
 
     @staticmethod
     def rollback(change_request):
-        # simulate rollback
-        interface = change_request["interface"]
-        ip = change_request.get("ip", "dhcp")
-        return {"rollback": "executed", "status": "reverted to previous state", "command": f"delete interfaces {interface} unit 0 family inet address {ip}"}
-
+        return {"rollback": "executed", "status": "reverted"}
 
 class NetworkChangeAgent:
-
     def __init__(self):
         self.memory = []
+        self.max_retries = 2
         self.state = {
             "plan": [],
             "config": None,
-            "result": None
+            "result": None,
+            "retry_count": 0
         }
 
     def planner(self, goal):
-        """
-        The Planning Layer: Maps Natural Language to a 
-        Sequence of technical capabilities.
-        """
         goal = goal.lower()
-
-        # Scenario A: Full Deployment
         if "deploy" in goal:
             return ["validate", "generate_config", "deploy", "verify"]
-        
-        # Scenario B: Health Check / Audit / Troubleshoot
-        elif "check" in goal or "verify" in goal or "troubleshoot" in goal:
-            return ["validate", "verify"]
-        
-        # Scenario C: Emergency Rollback
         elif "rollback" in goal:
             return ["rollback", "verify"]
-            
         return []
 
     def run(self, goal, change_request):
         self.state["plan"] = self.planner(goal)
         
         print(f"--- Strategy Phase ---")
-        print(f"Goal identified: {goal}")
-        print(f"Executing Plan: {' -> '.join(self.state['plan'])}\n")
+        print(f"Goal: {goal} | Max Retries: {self.max_retries}\n")
 
-        # Use a while loop to allow the plan to change dynamically
         while self.state["plan"]:
-            task = self.state["plan"].pop(0) # Take the first task
+            task = self.state["plan"].pop(0)
             print(f"Executing: {task}...")
 
             if task == "validate":
@@ -94,27 +75,35 @@ class NetworkChangeAgent:
 
             elif task == "verify":
                 res = Tools.verify(change_request["interface"])
-
-                if res["state"] != "up":
-                    print(f"!!! CRITICAL: Verification Failed.")
-                    
-                    # --- HUMAN-IN-THE-LOOP BREAKPOINT ---
-                    print("\n" + "!"*40)
-                    user_choice = input("AGENT PROMPT: Failure detected. Should I attempt ROLLBACK? (yes/no): ")
-                    print("!"*40 + "\n")
-                    
-                    if user_choice.lower() == 'yes':
-                        recovery_tasks = self.planner("rollback")
-                        self.state["plan"].extend(recovery_tasks)
-                        self.state["result"] = "User approved recovery."
+                
+                if res["state"] == "up":
+                    self.state["result"] = "Success"
+                    self.state["retry_count"] = 0
+                else:
+                    # Logic: Retry before escalating
+                    if self.state["retry_count"] < self.max_retries:
+                        self.state["retry_count"] += 1
+                        print(f"!!! Verification Failed. Automated Retry {self.state['retry_count']}/{self.max_retries}...")
+                        # Re-add deploy and verify to the plan
+                        state['plan'].extend(["deploy", "verify"])
                     else:
-                        self.state["result"] = "User aborted recovery. Manual intervention required."
-                        break # Stop execution
+                        # Escalation to Human
+                        print("\n" + "!"*40)
+                        print("MAX RETRIES REACHED. SYSTEM REQUIRES HUMAN INTERVENTION.")
+                        user_choice = input("AGENT PROMPT: Retries failed. Attempt ROLLBACK? (yes/no): ")
+                        print("!"*40 + "\n")
+                        
+                        if user_choice.lower() == 'yes':
+                            recovery_tasks = self.planner("rollback")
+                            self.state["plan"].extend(recovery_tasks)
+                            self.state["result"] = "Manual Rollback initiated."
+                        else:
+                            self.state["result"] = "Manual intervention required. Plan aborted."
+                            break
 
             elif task == "rollback":
                 res = Tools.rollback(change_request)
 
-            # Keep memory logging
             self.memory.append((task, res))
 
         return self.state["result"]

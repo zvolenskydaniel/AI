@@ -1,4 +1,5 @@
 # Artificial Intelligence: Learning Path
+---
 This repository is part of my personal self-development journey focused on Artificial Intelligence and its practical use in real-world projects.
 
 The main goal is to build a solid understanding of AI concepts and learn how to effectively leverage them in both personal and commercial automation solutions. The project emphasizes hands-on experimentation and practical integration rather than purely theoretical knowledge.
@@ -8,6 +9,7 @@ To follow the content, basic programming skills are expected, with Python being 
 The repository is structured hierarchically, starting with fundamental concepts and gradually progressing toward more advanced topics such as AI integrations, automation workflows, and agent-based systems.
 
 ## Learning Path
+---
 1. [**Python + AI Integration**](https://github.com/zvolenskydaniel/AI/blob/main/01-python-ai-integration/README.md)
    - OpenAI API fundamentals
    - Prompt engineering basics

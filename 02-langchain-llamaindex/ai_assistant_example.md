@@ -1,17 +1,37 @@
 # Example: AI Assistant Using Python Library LlamaIndex
+---
 
 ## Table of content
+---
 - [Objective](#objective)
 - [Legal & Safety Disclaimer](#legal--safety-disclaimer)
 - [Demonstration & Evaluation Specification](#demonstration--evaluation-specification)
 - [Success Criteria & KPIs](#success-criteria--kpis)
+  - [Functional Accuracy]()
+  - [Response Quality]()
+  - [RAG Performance]()
+  - [Safety and Boundary Compliance]()
+  - [System Reliability]()
 - [Development Requirements](#development-requirements)
 - [Development Steps](#development-steps)
 - [Fine-tuning](#fine-tuning)
+  - [Chunking Strategy]()
+  - [Context Selection and Retrieval]()
+  - [Add Real-Time User Iteraction]()
+  - [Update Behaviour]()
 - [Demo & Evaluation](#demo--evaluation)
+  - [Demo]()
+  - [Results]()
+  - [Evaluation]()
+    - [Functional Accuracy]()
+    - [Response Quality]()
+    - [RAG Performance]()
+    - [Safety and Boundary Compliance]()
+    - [System Reliability]()
 - [Future Improvements](#future-improvements)
 
 ## Objective
+---
 This project serves as a presentation and simulation demonstrating how AI can be used in a business environment for troubleshooting purposes by using a company's internal documentation.
 
 The simulation topic focuses on a set of well-known medical conditions (*e.g. flu, cough, burns, headache, etc.*).
@@ -19,6 +39,7 @@ The simulation topic focuses on a set of well-known medical conditions (*e.g. fl
 It is assumed that users are already familiar with these common conditions, including their typical symptoms and general treatment approaches.
 
 ## Legal & Safety Disclaimer
+---
 This project is intended **solely for educational, demonstration, and simulation purposes**.
 
 The AI assistant does **not** provide medical advice, medical diagnosis, or treatment recommendations.
@@ -33,6 +54,7 @@ The project intentionally limits medical detail, avoids personalized medical rec
 > *“This AI assistant is for demonstration purposes only and does not provide medical advice.”*
 
 ## Demonstration & Evaluation Specification
+---
 The user interacts with the AI assistant by describing observed symptoms.  
 Based on the provided symptoms, the AI assistant should:
 - identify the most relevant condition using the available knowledge base
@@ -41,9 +63,11 @@ Based on the provided symptoms, the AI assistant should:
 The focus is on demonstrating reasoning, retrieval accuracy, and response quality rather than medical diagnosis.
 
 ## Success Criteria & KPIs
+---
 The success of the AI assistant is evaluated based on functional accuracy, response quality, and system behavior within defined safety boundaries.
 
 ### Functional Accuracy
+---
 - **Condition Recognition Accuracy**
   - the assistant correctly identifies the relevant condition based on user-provided symptoms
   - neasured by comparison against known examples from `common_health_issues.txt`
@@ -52,6 +76,7 @@ The success of the AI assistant is evaluated based on functional accuracy, respo
   - minimal retrieval of unrelated or redundant context
 
 ### Response Quality
+---
 - **Clarity and Readability**
   - responses are easy to understand for non-technical users
   - medical terminology is avoided or explained at a high level
@@ -63,6 +88,7 @@ The success of the AI assistant is evaluated based on functional accuracy, respo
   - no critical information gaps in the generated answer
 
 ### RAG Performance
+---
 - **Chunking Effectiveness**
   - different chunk sizes and overlap strategies are evaluated
   - performance is measured by retrieval relevance and answer consistency
@@ -71,6 +97,7 @@ The success of the AI assistant is evaluated based on functional accuracy, respo
   - demonstrable impact compared to non-metadata-based retrieval
 
 ### Safety and Boundary Compliance
+---
 - **Disclaimer Enforcement**
   - the assistant consistently includes or respects the legal and safety disclaimer
   - no medical diagnosis or personalized treatment is generated
@@ -79,6 +106,7 @@ The success of the AI assistant is evaluated based on functional accuracy, respo
   - refusals are polite, clear, and redirect the user to safe alternatives
 
 ### System Reliability
+---
 - **Response Consistency**
   - similar inputs produce logically consistent outputs
   - no hallucinated conditions outside the provided knowledge base
@@ -87,6 +115,7 @@ The success of the AI assistant is evaluated based on functional accuracy, respo
   - target latency defined based on local vs. remote LLM setup
 
 ## Development Requirements
+---
 Leverage knowledge from:
 - `Chapter 1: Python and AI Integration`
 - `Chapter 2: LangChain and LlamaIndex`
@@ -100,9 +129,10 @@ Key implementation requirements:
 Experiment with different document chunking strategies and compare their impact on retrieval accuracy and response quality.
 
 ## Development Steps
+---
 First, the documents are loaded into the system. In this implementation, a single structured text file is used as the source of knowledge. The document is enriched with metadata attributes, which are subsequently employed for document-level filtering during retrieval.
 ```python
-# ai_assistant_v1.py
+# 02-langchain-llamaindex/examples/ai_assistant_v1.py
 
 # Get the directory where the script itself is located
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -126,7 +156,7 @@ documents = SimpleDirectoryReader(
 
 Chunking refers to the process of partitioning large documents into smaller, semantically coherent units (*chunks*) prior to indexing and embedding. The selection of an appropriate chunking strategy depends on the source file format, internal structure, and overall document size. As an initial configuration, a simple text file is processed using a **Section-Aware Chunking** strategy.
 ```python
-# ai_assistant_v1.py
+# 02-langchain-llamaindex/examples/ai_assistant_v1.py
 
 # Define chunking strategy (Section-Aware Chunking)
 splitter = SentenceSplitter(
@@ -137,7 +167,7 @@ splitter = SentenceSplitter(
 
 A vector-based index is then constructed over the document using the defined chunking strategy, enabling efficient semantic retrieval.
 ```python
-# ai_assistant_v1.py
+# 02-langchain-llamaindex/examples/ai_assistant_v1.py
 
 # Build vector index + apply chunking strategy
 index = VectorStoreIndex.from_documents(
@@ -148,7 +178,7 @@ index = VectorStoreIndex.from_documents(
 
 Metadata filtering is applied during retrieval to ensure that only nodes satisfying the specified constraints are selected. These nodes are embedded into the prompt and made available for inspection via `response.source_nodes`. Consequently, the retrieval process is strictly limited to the designated document(s).
 ```python
-# ai_assistant_v1.py
+# 02-langchain-llamaindex/examples/ai_assistant_v1.py
 
 # Define metadata filters explicitly
 filters = MetadataFilters(
@@ -172,7 +202,7 @@ filters = MetadataFilters(
 
 Query processing and retrieval aim to identify the most relevant document chunks required to answer a user’s query. This process is governed by semantic similarity rather than exact keyword matching. In this context, only nodes originating from documents that satisfy the metadata filtering criteria are considered during retrieval.
 ```python
-# ai_assistant_v1.py
+# 02-langchain-llamaindex/examples/ai_assistant_v1.py
 
 # Metadata filtering during quering
 query_engine = index.as_query_engine(
@@ -182,7 +212,7 @@ query_engine = index.as_query_engine(
 
 It is important to note that metadata filtering alone does not prevent the language model from leveraging its pre-trained knowledge. To ensure that responses are grounded exclusively in the provided document content, explicit prompt-level grounding must be employed.
 ```python
-# ai_assistant_v1.py
+# 02-langchain-llamaindex/examples/ai_assistant_v1.py
 
 from llama_index.core.prompts import PromptTemplate
 
@@ -231,7 +261,7 @@ query_engine = index.as_query_engine(
 
 Finally, the user’s query is converted into an embedding, the vector index identifies the most semantically similar document chunks, the retrieved chunks are supplied as contextual input to the language model, and a grounded response is generated.
 ```python
-# ai_assistant_v1.py
+# 02-langchain-llamaindex/examples/ai_assistant_v1.py
 
 # Query -> Response
 user_query = "I have a headache and sensitivity to light."
@@ -244,7 +274,7 @@ print(response.response)
 
 The following section is included to facilitate inspection and analysis of the retrieved document chunks that are provided to the language model.
 ```python
-# ai_assistant_v1.py
+# 02-langchain-llamaindex/examples/ai_assistant_v1.py
 
 # Inspect source nodes
 logger.info(f"=== Source Nodes ===")
@@ -266,9 +296,11 @@ logger.info(context_str)
 ```
 
 ## Fine-tuning
+---
 Once the script `ai_assistant_v1.py` is executed, the LLM generates responses based on the predefined local knowledge source `common_health_issues.txt`. The LLM’s output is constrained to include only the **Solution** section of the identified issue or disease.
 
 ### Chunking Strategy
+---
 Inspection of the log file `logger/logger.log` reveals the following behavior:
 ```log
 ==================================================
@@ -313,7 +345,7 @@ splitter = SentenceSplitter(
   - enrich each chunk with additional metadata, including the issue or disease name
   - remove the `SentenceSplitter`, as chunking is handled explicitly at the section level
 ```python
-# ai_assistant_v2.py
+# 02-langchain-llamaindex/examples/ai_assistant_v2.py
 
 # Load documents from disk and define metadata
 with open(file_path, "r", encoding="utf-8") as f:
@@ -395,6 +427,7 @@ Solution:
 ```
 
 ### Context Selection and Retrieval
+---
 The next step focuses on the **context** provided to the LLM during query execution. With the current configuration, two source nodes are retrieved and passed to the LLM:
 
 - **Source Node 1**  
@@ -407,7 +440,7 @@ The next step focuses on the **context** provided to the LLM during query execut
 
 The LLM must determine which retrieved content is most relevant for generating the final response. As discussed earlier, to further reduce the risk of hallucinations, a **minimum similarity threshold** can be enforced during retrieval. Nodes with similarity scores below this threshold are excluded and are not passed to the LLM.
 ```python
-# ai_assistant_v2.py
+# 02-langchain-llamaindex/examples/ai_assistant_v2.py
 
 from llama_index.core.postprocessor import SimilarityPostprocessor
 
@@ -419,9 +452,10 @@ query_engine = index.as_query_engine(
 ```
 
 ### Add Real-Time User Iteraction
+---
 At the moment, the user's query is statically specified for a single sentese. To simulate real-time `user vs. AI assistent` iteraction, for multiple scenarious during a demo, the original code needs to be adjusted.
 ```python
-# ai_assistant_v3.py
+# 02-langchain-llamaindex/examples/ai_assistant_v3.py
 
 print("Start chatting (type 'exit' to quit).")
 while True:
@@ -443,6 +477,7 @@ while True:
 ```
 
 ### Update Behaviour
+---
 When the assistant does not recognize a matching condition, it does not attempt to infer or fabricate an answer. In cases where no relevant nodes are retrieved, the LLM receives an empty context. As a result, the model may return an **empty response**. This behavior is expected and represents a known characteristic of Retrieval-Augmented Generation (RAG) systems rather than a defect in the implementation.
 ```shell
 $ python ai_assistant_v3.py
@@ -462,7 +497,7 @@ Bye!
 
 To address this behavior, the retrieval phase is explicitly separated from the generation phase. The LLM is invoked only when at least one relevant source node is successfully retrieved. If retrieval yields no results, a deterministic fallback response is returned instead of invoking the model.
 ```python
-# ai_assistant_v3.py
+# 02-langchain-llamaindex/examples/ai_assistant_v3.py
 
 if not response.source_nodes:
     final_answer = "I do not have enough information in the provided knowledge base."
@@ -472,11 +507,13 @@ print(f"AI Assistant: {final_answer}")
 ```
 
 ## Demo & Evaluation
+---
 This section focuses on the demonstration and evaluation of the system. The demonstration consists of three user inputs, where the final input intentionally queries an issue or disease that is **not** present in the local knowledge base.  
 
 The objective is to validate correct LLM behavior in successful retrieval scenarios, as well as in cases where no relevant data exists for a given query. In such situations, the system is expected to respond appropriately by acknowledging the absence of sufficient information rather than generating unsupported or hallucinated content.
 
 ### Demo
+---
 ```shell
 $ python ai_assistant_v3.py
 Start chatting (type 'exit' to quit).
@@ -510,6 +547,7 @@ Bye!
 ```
 
 ### Results
+---
 | Disease | User input | Expected Assistant Respond | Evaluation |
 | ------- | ---------- | -------------------------- | ---------- |
 | Headache | I have a headache and sensitivity to light. | Headache Solution | OK |
@@ -519,9 +557,11 @@ Bye!
 ![demo_results.txt](https://github.com/zvolenskydaniel/AI/blob/main/02-langchain-llamaindex/examples/demo_results.txt)
 
 ### Evaluation
+---
 The system was evaluated using three representative test cases designed to validate both successful retrieval scenarios and correct fallback behavior when relevant data is unavailable. The outcomes are assessed against the predefined [Success Criteria and KPIs](#success-criteria--kpis).
 
 #### Functional Accuracy
+---
 **Condition Recognition Accuracy**  
 The assistant successfully identified the correct condition for all test cases where the condition was present in the local knowledge base. For the inputs related to *Headache* and *Upset Stomach*, the assistant correctly mapped user-described symptoms to the corresponding conditions defined in `common_health_issues.txt`.  
 For the intentionally unsupported query (*Broken Big Toe*), the assistant correctly recognized that no matching condition existed and did not attempt to infer or fabricate an answer.
@@ -530,6 +570,7 @@ For the intentionally unsupported query (*Broken Big Toe*), the assistant correc
 Retrieved document chunks were directly related to the user queries in all supported cases. No unrelated or redundant content was observed in the retrieved context. In the unsupported case, no misleading or partially relevant chunks were retrieved, demonstrating effective retrieval filtering.
 
 #### Response Quality
+---
 **Clarity and Readability**  
 All generated responses were concise and easy to understand for non-technical users. Medical terminology was either avoided or presented at a high level, consistent with the educational nature of the simulation.
 
@@ -540,6 +581,7 @@ Responses followed a consistent and predictable structure aligned with the sourc
 For supported conditions, responses adequately addressed the user’s symptoms and provided a general resolution approach without omitting critical information. For unsupported queries, the response appropriately indicated insufficient knowledge without attempting partial or speculative answers.
 
 #### RAG Performance
+---
 **Chunking Effectiveness**  
 The applied section-aware, delimiter-based chunking strategy resulted in coherent and semantically complete source nodes. Retrieval results demonstrated improved alignment between user queries and retrieved content, with no observed section leakage or fragmented context.
 
@@ -547,6 +589,7 @@ The applied section-aware, delimiter-based chunking strategy resulted in coheren
 Metadata filtering (*e.g. domain, document type, content scope*) effectively constrained retrieval to the intended knowledge source. Compared to unfiltered retrieval, metadata usage demonstrably improved precision and reduced the risk of irrelevant context being passed to the LLM.
 
 #### Safety and Boundary Compliance
+---
 **Disclaimer Enforcement**  
 The assistant respected the defined safety boundaries throughout the evaluation. No medical diagnoses, personalized treatment plans, or prescriptive advice were generated.
 
@@ -554,6 +597,7 @@ The assistant respected the defined safety boundaries throughout the evaluation.
 In the unsupported test case, the assistant appropriately declined to provide an answer by explicitly stating that sufficient information was not available in the knowledge base. The refusal was clear, polite, and aligned with the predefined fallback behavior.
 
 #### System Reliability
+---
 **Response Consistency**  
 The system produced logically consistent responses for similar inputs and did not hallucinate conditions outside the provided knowledge base. Behavior remained stable across all evaluated scenarios.
 
@@ -563,6 +607,7 @@ All responses were generated within an acceptable time frame for an interactive 
 Overall, the evaluation results indicate that the system meets the defined [Success Criteria and KPIs](#success-criteria--kpis), demonstrating reliable retrieval-augmented generation, effective safety controls, and predictable behavior suitable for educational AI health simulations.
 
 ## Future Improvements
+---
 Potential extensions to the project include:
 - enabling the AI assistant to propose updates to `common_health_issues.txt` by adding new conditions while preserving the existing document structure
 - convert local knowledge source file `common_health_issues.txt` first into `markdown` and then into `yaml`
