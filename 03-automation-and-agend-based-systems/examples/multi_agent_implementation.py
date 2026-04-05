@@ -122,7 +122,15 @@ class Orchestrator:
 
 # --- Execution ---
 orchestrator = Orchestrator()
-request = {"interface": "ge-0/0/1", "ip": "10.0.0.1/24"}
-final_status = orchestrator.run_workflow("deploy interface", request)
+
+request = {
+    "interface": "ge-0/0/1",
+    "ip": "10.0.0.1/24"
+}
+
+final_status = orchestrator.run_workflow(
+    goal = "deploy interface", 
+    change_request = request
+)
 
 print(f"\nFinal Status: {final_status}")

@@ -59,14 +59,14 @@ This project aims to bridge the gap between high-level AI theory and practical s
   - [Multi-Agent: Summary](#multi-agent-summary)
 - [CrewAI, LangGraph and AutoGen Fundamentals](#crewai-langgraph-and-autogen-fundamentals)
   - [CrewAI](#crewai)
-    - [Key Concepts]()
-    - [How it works]()
+    - [Key Concepts](#key-concepts)
+    - [How it works](#how-it-works)
   - [LangGraph](#langgraph)
-    - [Key Concepts]()
-    - [How it Works]()
+    - [Key Concepts](#key-concepts-1)
+    - [How it Works](#how-it-works-1)
   - [AutoGen](#autogen)
-    - [Key Features & Concepts]()
-    - [How it Works]()
+    - [Key Features & Concepts](#key-features--concepts)
+    - [How it Works](#how-it-works-2)
 - [Task Orchestration and Delegation](#task-orchestration-and-delegation)
 - [Failure Handling and Observability](#failure-handling-and-observability)
 
@@ -1296,6 +1296,180 @@ CrewAI's Sequential Process a.k.a. *Static Task Orchestrator* style can be used 
 
 > Source: https://www.crewai.com/ & https://docs.crewai.com/en/introduction
 
+#### CrewAI Examples
+---
+The first CrewAI example is going to create two agents as 2 separate files:
+- first agent to obtain coordinates for specific city
+- second agent to obtain current weather forecast for specific city on the base of obtained `latitude` and `longitude`
+
+Run each script and see the output. The `coordinates_agent` will provide the *latitude* and the *longitude* for the specific city. The `weather_agent` is going to provide the current *temperature* and the current *speed of the wind* for the provided latitude and longitude of the city.
+
+```python
+# 03-automation-and-agend-based-systems/examples/coordinates_agent.py
+
+# Get coordinates: Coordinates API
+# @tool decorator automatically does the input typing + metadata LangChain needs.
+@tool
+def geocode_city(city: str) -> dict:
+    """
+    Convert city name to latitude and longitude.
+    """
+    url = "https://nominatim.openstreetmap.org/search"
+    params = {
+        "q": city, 
+        "format": "json",
+        "limit": 1
+    }
+    headers = {
+        "User-Agent": "langchain-agent-demo"
+    }
+
+    response = requests.get(url, params=params, headers=headers, timeout=10)
+    data = response.json()
+
+    if not data:
+        return {"error": "City not found"}
+
+    return {
+        "latitude": float(data[0]["lat"]),
+        "longitude": float(data[0]["lon"]),
+    }
+
+# Define LLM
+llm = ChatOpenAI(
+    model = "gpt-4o-mini",
+    temperature = 0
+)
+
+# Create the Agent
+agent = create_agent(
+    model = llm,
+    tools = [geocode_city]
+)
+
+# Run it
+ai_message = agent.invoke({
+    "messages": [
+        HumanMessage(content="What's the coordinates for the city Bratislava?")
+    ]
+})
+
+print(ai_message["messages"][-1].content)
+
+```
+
+```python
+# 03-automation-and-agend-based-systems/examples/weather_agent.py
+
+# Get weather: Weather API
+# @tool decorator automatically does the input typing + metadata LangChain needs.
+@tool
+def get_weather(latitude: float, longitude: float) -> str:
+    """
+    Get current weather for given coordinates.
+    """
+    url = (
+        "https://api.open-meteo.com/v1/forecast"
+        f"?latitude={latitude}&longitude={longitude}&current_weather=true"
+    )
+    response = requests.get(url, timeout=10)
+    data = response.json()
+
+    weather = data.get("current_weather", {})
+    return (
+        f"Temperature: {weather.get('temperature')}°C,\n"
+        f"Wind: {weather.get('windspeed')} km/h"
+    )
+
+# Define LLM
+llm = ChatOpenAI(
+    model = "gpt-4o-mini",
+    temperature = 0
+)
+
+# Create the Agent
+agent = create_agent(
+    model = llm,
+    tools = [get_weather]
+)
+
+# Run it
+ai_message = agent.invoke({
+    "messages": [
+        HumanMessage(content="What's the weather at latitude 48.1559 longitude 17.1314?")
+    ]
+})
+
+print(ai_message["messages"][-1].content)
+
+```
+
+Next, let's create single file `a2a.py` (*agent to agent*), where both agents are manully orchestrated.
+
+> **IMPORTANT:**
+>
+> - agents are not APIs
+> - agents are LLMs that may call tools
+
+To have deterministic behavior, the agents must:
+- call the tool
+- extract the tool result
+- pass structured data forward
+
+```python
+# 03-automation-and-agend-based-systems/examples/a2a.py
+
+def weather_by_city(city: str) -> str:
+    """
+    Call each agent and return current weather for specific city.
+    """
+    # print(f"city: {city}")
+    coords_raw = geo_agent.invoke({
+        "messages": [
+            HumanMessage(
+                content = f"Get coordinates for the city {city}."
+            )
+        ]
+    })
+    # extract latitude & longitude received from coordinates_agent
+    coords = extract_coords(coords_raw)
+    # print(f"coords: {coords}")
+    latitude = coords["latitude"]
+    longitude = coords["longitude"]
+    weather_raw = weather_agent.invoke({
+        "messages": [
+            HumanMessage(
+                content=f"Provide the current weather for {city} based on these coordinates: "
+                        f"latitude {latitude} and longitude {longitude}. "
+                        f"Output ONLY the weather in this format: "
+                        f"'The current weather in [City] is [Temp]°C with a wind speed of [Speed] km/h.' "
+            )
+        ]
+    })
+    weather = weather_raw["messages"][-1].content
+    return weather
+
+print(weather_by_city(city = "Bratislava"))
+```
+
+In a multi-agent architecture, each agent is an *"island"* with its own memory. When the `Planner` hands off a task from the `GeoAgent` to the `WeatherAgent`, the original intent (*the city name*) is often lost unless the orchestrator explicitly passes that metadata forward. This is why frameworks like **CrewAI** use a *"Task Context"* and **LangGraph** uses a *"Shared State"* to ensure the city name is available to all nodes in the graph.
+
+TODO: Create Crew
+```
+crew = Crew(
+    agents=[weather_agent, geo_agent],
+    tasks=[],
+    process=Process.sequential,
+    verbose=True
+)
+```
+
+TODO:In next example let's use the logic of the previous script `network_change_agent_v4.py`, which mimics *CrewAI’s Sequential Process*, and rebuild it by using CrewAI python library.
+
+```python
+# 03-automation-and-agend-based-systems/examples/crewai_network_agent.py
+
+```
 
 ### LangGraph
 ---
