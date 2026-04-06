@@ -61,6 +61,12 @@ This project aims to bridge the gap between high-level AI theory and practical s
   - [CrewAI](#crewai)
     - [Key Concepts](#key-concepts)
     - [How it works](#how-it-works)
+    - [CrewAI Examples](#crewai-examples)
+      - [Manual Orchestration]()
+      - [Manual Orchestration with Pydantic Schema]()
+      - [Streamlined Pipeline Orchestration]()
+      - [Declarative Frameworks]()
+      - [Network Change Agent via CrewAI]()
   - [LangGraph](#langgraph)
     - [Key Concepts](#key-concepts-1)
     - [How it Works](#how-it-works-1)
@@ -1404,7 +1410,9 @@ print(ai_message["messages"][-1].content)
 
 ```
 
-Next, let's create single file `a2a.py` (*agent to agent*), where both agents are manully orchestrated.
+##### Manual Orchestration
+---
+Next, let's create *agent to agent* example, where both agents are manully orchestrated.
 
 > **IMPORTANT:**
 >
@@ -1417,7 +1425,7 @@ To have deterministic behavior, the agents must:
 - pass structured data forward
 
 ```python
-# 03-automation-and-agend-based-systems/examples/a2a.py
+# 03-automation-and-agend-based-systems/examples/a2a_v1.py
 
 def weather_by_city(city: str) -> str:
     """
@@ -1452,18 +1460,284 @@ def weather_by_city(city: str) -> str:
 print(weather_by_city(city = "Bratislava"))
 ```
 
-In a multi-agent architecture, each agent is an *"island"* with its own memory. When the `Planner` hands off a task from the `GeoAgent` to the `WeatherAgent`, the original intent (*the city name*) is often lost unless the orchestrator explicitly passes that metadata forward. This is why frameworks like **CrewAI** use a *"Task Context"* and **LangGraph** uses a *"Shared State"* to ensure the city name is available to all nodes in the graph.
+In a multi-agent architecture, each agent is an *"island"* with its own memory. When a task is hand of from the `GeoAgent` to the `WeatherAgent`, the original intent (*the city name*) is often lost unless the orchestrator explicitly passes that metadata forward. The simplest way to include the city name in response is to provide the city in the content of `HumanMessage`, when sent to the `weather_agent`. This gives the LLM the context it needs to format the final sentence (`Provide the current weather for {city} based on these coordinates:`).
 
-TODO: Create Crew
+The LLMs are naturally conversational. To get expected output, a formatting instruction must be included in the content of `HumanMessage` (`The current weather in [City] is [Temp]°C with a wind speed of [Speed] km/h.`). 
+
+
+##### Manual Orchestration with Pydantic Schema
+---
+In professional AI systems, relying on an agent to *"speak"* the right format is risky. Instead, the library such as `Pydantic` is used to define a *"Schema"*. This forces the LLM to map its findings into a specific data structure. Therefore, the next example is going to use `Pydantic` to format the LLM responses of both agents.
+
+```python
+# 03-automation-and-agend-based-systems/examples/a2a_v2.py
+
+from pydantic import BaseModel, Field
+
+class GeoResponse(BaseModel):
+    latitude: float = Field(description="Latitude of the city")
+    longitude: float = Field(description="Longitude of the city")
+
+class WeatherResponse(BaseModel):
+    city: str = Field(description="The name of the city")
+    temperature: float = Field(description="Current temperature in Celsius")
+    wind_speed: float = Field(description="Current wind speed in km/h")
+    summary: str = Field(description="A one-sentence summary of the weather")
+
+def weather_by_city(city: str):
+    """
+    Call each agent and return current weather for specific city.
+    """
+    coords_raw = geo_agent.invoke({
+        "messages": [
+            HumanMessage(
+                content = f"Use your tools to find coordinates for {city}"
+            )
+        ]
+    })
+    raw_content = tool_output(response = coords_raw)
+
+     # Structured output
+    structured_llm_geo = llm.with_structured_output(GeoResponse)
+
+    # Pass raw API data to the LLM
+    prompt_geo = f"Extract coordinates from this raw data: {raw_content}"
+    coords = structured_llm_geo.invoke(prompt_geo)
+    
+    # Get Weather Data
+    weather_raw = weather_agent.invoke({
+        "messages": [
+            HumanMessage(
+                content = f"Get weather for latitude {coords.latitude} and longitude {coords.longitude}."
+            )
+        ]
+    })
+    weather_data = weather_raw["messages"][-1].content
+    
+    # Wrap the LLM with the structured output requirement
+    structured_llm_wea = llm.with_structured_output(WeatherResponse)
+
+    # Use the LLM as a "Parser" to fill the Pydantic object
+    prompt_wea = f"Format the weather data for {city}. Data: {weather_data}"
+    
+    # Return WeatherResponse
+    final_output = structured_llm_wea.invoke(prompt_wea)
+    
+    return final_output
+
+# --- Execution ---
+result = weather_by_city("Bratislava")
+
+# Now you can access it like an object:
+print(f"City: {result.city}")
+print(f"Temp: {result.temperature}")
+
+# Or convert to a clean JSON string:
+print(result.model_dump_json(indent = 2))
+
 ```
-crew = Crew(
-    agents=[weather_agent, geo_agent],
-    tasks=[],
-    process=Process.sequential,
+
+The implementation in `a2a_v2.py` represents a **Manual Handoff Pattern**. In this model, the developer acts as the central router, explicitly extracting data from the `GeoAgent`’s message history, validating it against a Pydantic schema, and then manually injecting those attributes into the `WeatherAgent`’s prompt.
+
+
+##### Streamlined Pipeline Orchestration
+---
+The next evolution of the system utilizes **LangChain Expression Language (LCEL)**. By transitioning from manual extraction to a **Functional Chain**, the architecture collapses the *"Action-Observation-Parsing"* loop into a single atomic operation.
+
+In the forthcoming `a2a_v3.py`, the orchestration moves from **Imperative** to **Declarative**.
+
+```python
+# 03-automation-and-agend-based-systems/examples/a2a_v3.py
+
+def weather_chain(city: str):
+    """Unified Orchestration Logic"""
+    geo_llm = llm.bind_tools([geocode_city]).with_structured_output(GeoResponse)
+    weather_llm = llm.bind_tools([weather_city]).with_structured_output(WeatherResponse)
+
+    coords = geo_llm.invoke(f"Find coordinates for {city}")
+    weather_result = weather_llm.invoke(
+        f"Get weather for lat: {coords.latitude}, lon: {coords.longitude}"
+    )
+
+    return {
+        "location": city,
+        "coordinates": coords.model_dump(),
+        "weather": weather_result.model_dump()
+    }
+
+# --- Execution ---
+result = weather_chain("Bratislava")
+print(json.dumps(result, indent=2))
+```
+
+Frameworks like **CrewAI** are powerful, but they are often *"overkill"* for simple linear tasks. The above script ended up with this **LangChain/LCEL** approach because:
+- **Reduced Latency:** CrewAI agents go through a *"Thought/Action/Observation"* loop; for a simple API call, this adds extra LLM tokens and seconds of waiting
+- **Granular Control:** by using `bind_tools` and `with_structured_output`, we have 100% control over the data schema
+- **Architectural Clarity:** it demonstrates the *"Core"* of an agent without the heavy lifting of a manager or a background process
+
+##### Declarative Frameworks
+---
+To use **CrewAI**, there is shift from *"Functions"* to *"Roles"*. Instead of calling a tool, an Agent owns a specific job. Here is how to rebuild this into a formal `Crew`.
+
+While **CrewAI** is compatible with **LangChain**, it performs best when using its own `LLM` class wrapper. This ensures that the **Pydantic** validation layers between the Agent and the Model are perfectly aligned, preventing *"TypeErrors"* during the initialization phase.
+
+```python
+# 03-automation-and-agend-based-systems/examples/a2a_v4.py
+
+from crewai import LLM
+
+llm = LLM(
+    model = "gpt-4o-mini",
+    temperature = 0
+)
+```
+
+Standard decorators (*like LangChain's `@tool`*) can sometimes fail *Pydantic* validation in strict environments. The most robust solution is to define tools as classes inheriting from `crewai.tools.BaseTool`. By implementing a *Pydantic* `args_schema`, we create a deterministic *"Input Contract"*. This forces the LLM to use specific `JSON` keys, eliminating common errors like *Multiple Values for Argument* or *KeyErrors*.
+
+```python
+# 03-automation-and-agend-based-systems/examples/a2a_v4.py
+
+from crewai.tools import BaseTool
+from pydantic import BaseModel, Field
+
+class GeocodeInput(BaseModel):
+    city: str = Field(description="The name of the city to search for (e.g., 'Bratislava').")
+
+class GeocodeTool(BaseTool):
+    name: str = "geocode_city"
+    description: str = "Convert a city name into latitude and longitude coordinates."
+    args_schema: type[BaseModel] = GeocodeInput
+
+    # Get coordinates: Coordinates API
+    def _run(self, city: str) -> str:
+        """Convert city name to latitude and longitude."""
+        print(f"DEBUG: Agent is searching for: {city}")
+
+        url = "https://nominatim.openstreetmap.org/search"
+        params = {
+            "q": city, 
+            "format": "json",
+            "limit": 1
+        }
+        headers = {
+            "User-Agent": "langchain-agent-demo"
+        }
+        try:
+            response = requests.get(url, params=params, headers=headers, timeout=10)
+            data = response.json()
+
+            if not data:
+                return f"Error: City '{city}' not found. Please try a different name."
+
+            return f"Latitude: {float(data[0]['lat'])}, Longitude: {float(data[0]['lon'])}"
+
+        except Exception as e:
+            return f"Error connecting to Geocoding service: {str(e)}"
+
+class WeatherInput(BaseModel):
+    latitude: float = Field(description="The latitude coordinate.")
+    longitude: float = Field(description="The longitude coordinate.")
+
+class WeatherTool(BaseTool):
+    name: str = "weather_city"
+    description: str = "Get current weather for given latitude and longitude coordinates."
+    args_schema: type[BaseModel] = WeatherInput
+
+    # Get weather: Weather API
+    def _run(self, latitude: float, longitude: float) -> str:
+        """Get current weather for given coordinates."""
+        url = (
+            "https://api.open-meteo.com/v1/forecast"
+            f"?latitude={latitude}&longitude={longitude}&current_weather=true"
+        )
+
+        try:
+            response = requests.get(url, timeout=10)
+            data = response.json()
+
+            # Another safety check
+            if "current_weather" not in data:
+                return "Error: Weather data currently unavailable for these coordinates."
+
+            weather = data.get("current_weather", {})
+            return f"Temperature: {weather.get('temperature')}°C, Wind: {weather.get('windspeed')} km/h"
+
+        except Exception as e:
+            return f"Error connecting to Weather service: {str(e)}"
+
+geocode_tool = GeocodeTool()
+weather_tool = WeatherTool()
+```
+
+Agents are defined by **Roles**, **Goals**, and **Backstories**. This *"Triple-A" (Agent, Attribute, Assignment)* structure shifts the focus from writing logic to defining expertise, allowing the LLM to better understand its specific domain of responsibility.
+
+```python
+# 03-automation-and-agend-based-systems/examples/a2a_v4.py
+
+from crewai import Agent
+
+geo_researcher = Agent(
+    role='Geographic Researcher',
+    goal='Find accurate coordinates for {city}',
+    backstory='Expert in geocoding and global coordinates.',
+    tools=[geocode_tool],
+    llm=llm,
+    verbose=True
+)
+
+weather_analyst = Agent(
+    role='Weather Analyst',
+    goal='Provide weather data for coordinates provided by the researcher',
+    backstory='Meteorological data specialist.',
+    tools=[weather_tool],
+    llm=llm,
     verbose=True
 )
 ```
 
+CrewAI manages the *"Chain of Thought"* between agents using **Task Context**. By setting `context=[coord_task]`, we enable a seamless data flow where the `Weather Analyst` automatically consumes the output of the `Geographic Researcher`. This replaces manual data parsing with **Natural Language Context**, mirroring how human teams collaborate.
+
+```python
+# 03-automation-and-agend-based-systems/examples/a2a_v4.py
+
+from crewai import Crew, Task, Process
+
+coord_task = Task(
+    description='Find the latitude and longitude for the city: {city}',
+    expected_output='A dictionary with latitude and longitude.',
+    agent=geo_researcher
+)
+
+weather_task = Task(
+    description='Look at the coordinates from the previous task and provide the current weather.',
+    expected_output='A concise weather report including temperature and wind speed.',
+    agent=weather_analyst,
+    context=[coord_task] # This tells CrewAI to feed the output of task 1 into task 2
+)
+
+# --- Assemble the Crew ---
+weather_crew = Crew(
+    agents=[geo_researcher, weather_analyst],
+    tasks=[coord_task, weather_task],
+    process=Process.sequential # Task 1 must finish before Task 2 starts
+)
+```
+
+The `kickoff` process initiates the orchestration. Because the tools are now schema-validated, if an agent makes a mistake, the framework provides a *"Semantic Error"* (*e.g., "City not found"*), allowing the agent to self-correct and try again without crashing the entire workflow.
+
+```python
+# 03-automation-and-agend-based-systems/examples/a2a_v4.py
+
+result = weather_crew.kickoff(inputs={'city': 'Bratislava'})
+
+print("\n--- FINAL CREW REPORT ---")
+print(result)
+```
+
+Transitioning from **Manual Orchestration** to **Declarative Frameworks** trades low-level code simplicity for high-level system resilience. While the initial setup is more complex due to strict type-checking, the resulting system is far more capable of handling the inherent ambiguity of natural language inputs.
+
+##### Network Change Agent via CrewAI
+---
 TODO:In next example let's use the logic of the previous script `network_change_agent_v4.py`, which mimics *CrewAI’s Sequential Process*, and rebuild it by using CrewAI python library.
 
 ```python
