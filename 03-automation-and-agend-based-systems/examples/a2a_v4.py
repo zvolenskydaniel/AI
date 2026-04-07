@@ -3,6 +3,7 @@
 # zvolensky.daniel@gmail.com
 #
 
+# ---- Import libraries ----
 import requests
 from crewai import Agent, Crew, LLM, Process, Task
 from crewai.tools import BaseTool

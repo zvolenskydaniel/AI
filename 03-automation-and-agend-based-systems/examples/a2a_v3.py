@@ -3,6 +3,7 @@
 # zvolensky.daniel@gmail.com
 #
 
+# ---- Import libraries ----
 import json
 import requests
 from dotenv import load_dotenv

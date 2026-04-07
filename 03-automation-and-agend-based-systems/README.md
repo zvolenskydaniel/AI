@@ -1738,12 +1738,113 @@ Transitioning from **Manual Orchestration** to **Declarative Frameworks** trades
 
 ##### Network Change Agent via CrewAI
 ---
-TODO:In next example let's use the logic of the previous script `network_change_agent_v4.py`, which mimics *CrewAI’s Sequential Process*, and rebuild it by using CrewAI python library.
+The transition of a *Network Change Agent* from raw Python `network_change_agent_v4.py` to the **CrewAI framework** requires a fundamental shift in how automation is structured. While raw Python scripts rely on explicit `if/else` loops and manual function calls to handle state, CrewAI introduces a **Declarative Role-Based** architecture.
 
+The keys to this architectural rebuild include:
+- **Atomic Tool Encapsulation:** Functions are wrapped in `BaseTool` classes with strict **Pydantic** `args_schema` definitions. This ensures that the *Large Language Model (LLM)* interacts with network resources through a deterministic *"contract"*, preventing common data-type mismatches.
 ```python
 # 03-automation-and-agend-based-systems/examples/crewai_network_agent.py
 
+from crewai.tools import BaseTool
+from pydantic import BaseModel
+
+class ValidateTool(BaseTool):
+    name: str = "validate"
+    description: str = "Validate a network change request."
+    args_schema: type[BaseModel] = ValidateInput
 ```
+
+- **Separation of Concerns (*Persona Definition*):** The logic is decomposed into specialized Agents - **Planner**, **Executor**, and **Verifier**. Each agent operates within a specific *"Backstory"* and *"Goal"*, allowing the LLM to focus on specialized sub-tasks rather than managing the entire workflow complexity at once.
+```python
+# 03-automation-and-agend-based-systems/examples/crewai_network_agent.py
+
+from crewai import Agent
+
+planner_agent = Agent(
+    role="Network Planner",
+    goal="Determine the correct sequence of steps to achieve the network goal",
+    backstory="Expert network architect who plans safe execution steps",
+    llm=llm,
+    verbose=True
+)
+
+executor_agent = Agent(
+    role="Network Executor",
+    goal="Execute network configuration tasks",
+    backstory="Automation engineer executing configurations",
+    tools=[validate_tool, generate_config_tool, deploy_tool, rollback_tool],
+    verbose=True
+)
+
+verifier_agent = Agent(
+    llm=llm,
+    role="Network Verifier",
+    goal="Verify the state of network devices",
+    backstory="Monitoring system ensuring network health",
+    tools=[verify_tool, rollback_tool],
+    verbose=True
+)
+```
+
+- **Sequential Context Management:** Instead of passing variables manually between functions, the system utilizes **Task Context**. This allows the output of a validation task to flow naturally into a configuration task, enabling the agents to *"understand"* the state of the network before proceeding.
+```python
+# 03-automation-and-agend-based-systems/examples/crewai_network_agent.py
+
+from crewai import Task
+
+validate_task = Task(
+    description=(
+        "Validate the change request.\n"
+        "You MUST pass the full 'change_request' dictionary to the validate tool.\n"
+        "Change request: {change_request}"
+    ),
+    expected_output="Validation result",
+    agent=executor_agent
+)
+
+config_task = Task(
+    description="Generate configuration for: {change_request}",
+    expected_output="Network configuration",
+    agent=executor_agent,
+    context=[validate_task]
+)
+```
+
+- **Closed-Loop Reliability:** By providing the **Verifier** with a `RollbackTool` and specific instructional intent, the script moves from *"Fire-and-Forget"* automation to **Closed-Loop Automation**. The agent can interpret a *"down"* state as a trigger for a corrective action without additional hard-coded logic.
+```python
+# 03-automation-and-agend-based-systems/examples/crewai_network_agent.py
+
+from crewai import Agent, Task
+
+verifier_agent = Agent(
+    llm=llm,
+    role="Network Verifier",
+    goal="Verify the state of network devices",
+    backstory="Monitoring system ensuring network health",
+    tools=[verify_tool, rollback_tool],
+    verbose=True
+)
+
+verify_task = Task(
+    description=(
+        "1. Verify the interface state for: {change_request} using the verify tool.\n"
+        "2. If the state is 'down', you MUST use the rollback tool immediately to revert the changes.\n"
+        "3. If the state is 'up', provide a final success report."
+    ),
+    expected_output="Verification result and confirmation of rollback if it was required.",
+    agent=verifier_agent
+)
+```
+
+The successful execution of this CrewAI implementation yields several critical outcomes for the field of network automation:
+
+- **Resilience via Self-Correction:** One of the primary outcomes is the emergence of a self-healing loop. Unlike a traditional script that might crash upon a verification failure, the Agentic approach allows the LLM to perceive a failure as a new prompt, triggering the `RollbackTool` to restore the network to its last known-good state.
+
+- **Input Determinism:** The use of structured schemas effectively eliminated the *"Multiple Values"* and *"List Index"* errors common in early iterations. This demonstrates that **Schema Enforcement** is a mandatory prerequisite for using LLMs in production-critical environments like networking.
+
+- **Abstraction of Complexity:** The resulting code is more maintainable because the *"intelligence"* (*the instructions*) is separated from the *"capability"* (*the tools*). Adding a new vendor (*e.g., switching from Junos to Cisco*) would only require updating a tool’s logic, while the Agentic roles and task flow remain unchanged.
+
+- **Semantic Verification:** The exercise proved that verification is not just a data-check but a semantic decision point. The Verifier Agent successfully translated the technical status `{"state": "down"}` into the operational decision to execute a rollback, mimicking the analytical judgment of a human network engineer.
 
 ### LangGraph
 ---

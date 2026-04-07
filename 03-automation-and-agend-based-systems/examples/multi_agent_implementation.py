@@ -5,6 +5,7 @@
 # Multi-Agent Implementation
 #
 
+# ---- Import libraries ----
 import sys
 
 # 1. THE TOOLS (The physical capabilities)
